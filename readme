@@ -1,0 +1,6 @@
+required python modules:
+	matplotlib
+	numpy
+	PIL
+	h5py
+	#fabio
