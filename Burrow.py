@@ -12,17 +12,27 @@ class Burrow(cmd.Cmd):
     
     #onblock "constructor" and "destructor"
     def preloop(self):
-        """Setup of all data and settings for further use"""
-        self.filename = None
-        self.datafile = None
+        """Setup of all data and settings for further use."""
+        self.dset = []
+        self.dsetName = []
+        self.currentData = None
+        self.activeDset = None
         self.currentImage = Image.new("RGB", (512,512)), "magenta"
         pyplot.ion() #turning interactive mode on
+        self.contrast = colorrange.Normalize(vmin = 0, vmax = 20, clip = False)
+        print("Type \"help\" to get a list of commands.")
         
     def postloop(self):
         """Destructor, closes the hdf file."""
-        if self.datafile != None:
-            self.datafile.close()
+        if self.dset != None:
+            for i in range(len(self.dset)):
+                self.dset[i].close()
     #offblock
+    
+    @property 
+    def dataset(self):
+        """Gets the active dataset."""
+        return self.dset[self.dsetName.index(self.activeDset)]
     
     #onblock command line commands
     #onblock exit comands
@@ -31,44 +41,141 @@ class Burrow(cmd.Cmd):
         return True
         
     def help_exit(self):
-        """exit help page entry"""
-        print('\n'.join([ 'This commad exits the program.']))
+        """exit help page entry."""
+        print("This commad exits the program.")
         
     def do_EOF(self, line):
-        """This is the representation of the Ctrl+D shortcut"""
+        """This is the representation of the Ctrl+D shortcut."""
         return True
         
     def help_EOF(self):
-        """EOF help page entry"""
-        print('\n'.join([ 'This is the representation of the Ctrl+D shortcut',
-                           'hit Ctrl+D to exit the program',
-                           ]))
+        """EOF help page entry."""
+        print("This is the representation of the Ctrl+D shortcut.")
+        print("Hit Ctrl+D to exit the program.")
     #offblock
     
     def do_openFile(self, argument):
         """Opens a given file."""
-        arguments = self.getArg(argument)
-        if arguments != -1:
+        errorcode, arguments = self.getArg(argument)
+        filename = "reconstruction.h5" #a default filename is assumed
+        filealias = "default" #a default name is assumed
+        if errorcode != -2:
             if "-n" in arguments:
                 filename = arguments[arguments.index("-n") + 1]
-                if os.path.isfile(filename):
-                    #requires replacement with arkadiy's routine
-                    self.datafile = h5py.File(filename, 'r')
-                    out.okay("File successfully opened!")
-                else:
-                    out.error("File does not exist!")
             else:
-                out.error("No file name is given!")
+                out.warn("No file name is given! Trying default name \"" + filename + "\".")
+            if "-a" in arguments:
+                filealias = arguments[arguments.index("-a") + 1]
+            if os.path.isfile(filename):
+                #requires replacement with arkadiy's routine
+                file = h5py.File(filename, 'r')
+                out.okay("File successfully opened as " + filealias + "!")
+                self.activeDset = filealias
+                out.warn("Active data set is now " + filealias)
+                if filealias in self.dsetName:
+                    self.dset[self.dsetName.index(filealias)] = file
+                else:
+                    self.dset.append(file)
+                    self.dsetName.append(filealias)
+            else:
+                out.error("File \"" + filename + "\" does not exist!")
+                
+    def help_openFile(self):
+        """openFile help page entry."""
+        print("Opens a h5 file, either in meerkat or direct format.")
+        out.error("Only meerkat data format implemented at the moment!")
+        print("Arguments:")
+        print("\t-n <file name>\tspecifies the file name, if not given \"reconstruction.h5\" is assumed.")
+        print("\t-a <file alias>\tspecifies the alias for the data under which it can be called , if not given \"default\" is assumed.")
     #offblock
+    
+    def do_showFiles(self, argument):
+        """Output of all active dsets"""
+        print("Active file: " + str(self.activeDset))
+        print("Currently open files:")
+        for s in self.dsetName:
+            print(s)
+            
+    def help_showFiles(self):
+        """showFiles help page entry"""
+        print("Prints all of the currently active files.")
+        
+    def do_plothkl(self, argument):
+        """plots a section of meerkat"""
+        out.warn("Only poor error checking implemented!")
+        errorcode, arguments = self.getArg(argument)
+        if errorcode != -1 and errorcode != -2:
+            index = 0 #default value
+            if "-s" in arguments:
+                section = arguments[arguments.index("-s") + 1]
+            if "-i" in arguments:
+                index = arguments[arguments.index("-i") + 1]
+                
+            self.currentData, x = ad.crossection_data(self.dataset, float(index), ad.Transformations(self.dataset, section))
+            self.replot()
+        elif errorcode == -1:
+            out.error("No arguments supplied!")
+        
+    def help_plothkl(self):
+        """plothkl help page entry."""
+        print("Plots a section of the reciprocal space.")
+        print("Arguments:")
+        print("\t-s <section>\tselect a section, either hkx, hxl, xhl, uvx, uxw or xvw.")
+        print("\t-i <index>\tfills the place holder of x with a Miller index, if none is given, 0 is assumed")
+        
+    def do_contrast(self, argument):
+        """Changes the contrast of pyplot."""
+        errorcode, arguments = self.getArg(argument)
+        if self.activeDset != None:
+            if errorcode != -1 and errorcode != -2:
+                self.contrast = colorrange.Normalize(vmin = int(arguments[0]), vmax = int(arguments[1]), clip = False)
+                self.replot()
+            elif errorcode != -1:
+                out.error("Input required!")
+        else:
+            out.error("No data selected!")
+            
+    def do_setActive(self, argument):
+        """Activates a dataset."""
+        errorcode, arguments = self.getArg(argument)
+        alias = "default" #default value
+        if errorcode != -1 and errorcode != -2:
+            if "-a" in arguments:
+                alias = arguments[arguments.index("-a") + 1]
+            else:
+                out.warn("No arguments supplied, trying default.")
+            if alias in self.dsetName:
+                self.activeDset = alias
+                out.okay("Activated " + alias + "!")
+            else:
+                out.error(alias + " not found!")
+        elif errorcode == -1:
+            out.error("No arguments supplied!")
     
     #onblock internal functions
     def getArg(self, line):
         """Splits the arguments and checks if the correct number of arguments are given."""
-        arguments = line.split()
-        if len(arguments) % 2 != 0:
-            arguments = -1
+        errorcode = 0
+        arguments = str(line).split()
+        if len(arguments) == 0: #no arguments supplied
+            arguments = ""
+            errorcode = -1
+        elif len(arguments) % 2 != 0: #invalid number of arguments
+            arguments = ""
+            errorcode = -2
             out.error("Invalid number of arguments!")
-        return arguments
+        return errorcode, arguments
+        
+    def replot(self):
+        """pyplot distinguishes between 1D and 2D data, this function should call the right method."""
+        self.plot()
+        
+    def plot(self):
+        """Uses pyplot to draw 2D data."""
+        pyplot.clf()
+        pyplot.imshow(self.currentData, interpolation='nearest', norm=self.contrast, cmap='Greys')
+        self.currentImage = self.plot2img(pyplot.figure)
+        pyplot.show()
     
     #onblock convertion of images und plots
     def plot2img(self, figure):
@@ -90,14 +197,14 @@ class Burrow(cmd.Cmd):
     #offblock
 
 if __name__ == '__main__':
-    """main loop creation"""
+    """Main loop creation, can run in terminal mode or script mode."""
     if len(sys.argv) == 2: #in this case, it is assumed that the user provides a file with a list of commands
         input = open(sys.argv[1], 'rt')
         try:
             #setting up silent script mode
             interpreter = Burrow(stdin=input)
-            interpreter.use_rawinput = False
-            interpreter.prompt = ""
+            interpreter.use_rawinput = False #required for file input to read new lines etc correctly
+            interpreter.prompt = "" #silent mode
             interpreter.cmdloop()
         finally:
             input.close()
