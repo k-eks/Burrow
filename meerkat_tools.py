@@ -11,6 +11,11 @@ def get_section_raw(file, pixel):
     return file['rebinned_data'][:, :, pixel] / file['number_of_pixels_rebinned'][:, :, pixel]
 
 
+def get_data_section_raw(file, pixel):
+    """Returns a crosssection of hkx by pixel height."""
+    return file['data'][:, :, pixel]
+
+
 def is_hole(intensity):
     """Checks if the pixel of a frame was affected py the punching algorithm"""
     return intensity < -2
@@ -41,6 +46,34 @@ def to_Yell_data(inputFileName, outputFileName):
     outFile.close()
 
 
+def mask_gaps(inputFileName, outputFileName):
+    """Creates a masking file useable by Yell."""
+    # preparing files
+    inFile = h5py.File(inputFileName, 'r')
+    outFile = h5py.File(outputFileName, 'w')
+    meta = MeerkatMetaData(inFile)
+
+    # writing the data
+    outFile.create_dataset('data', (meta.shape[0], meta.shape[1], meta.shape[2]))
+    for z in range(meta.shape[2]):
+        print("Using index %i of %i" % (z, meta.shape[2] - 1), end = "\r")
+        section = np.asarray(get_data_section_raw(inFile, z))
+        for x in range(meta.shape[0]):
+            for y in range(meta.shape[1]):
+                # 0 is the non covered area
+                # values way below -20 are part of the grid
+                # this is a remainder of the punching algorithm
+                if section[x, y] == 0 or section[x, y] < -20:
+                    section[x, y] = 0
+                else:
+                    section[x, y] = 1
+        outFile['data'][:,:,z] = section
+        del section # freeing memory
+
+    # clean up
+    print("\nMask creation complete!")
+    inFile.close()
+    outFile.close()
 
 class MeerkatMetaData:
     """A class which provides the metadata of meerkat"""
