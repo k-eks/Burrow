@@ -22,17 +22,20 @@ def is_untrusted(intensity):
 
 
 def to_Yell_data(inputFileName, outputFileName):
+    """Turns a meerkat file into a meerkat-data file suitable to be read by Yell."""
+    """In addition, all NANs are turned into 0."""
+    # preparing files
     inFile = h5py.File(inputFileName, 'r')
     outFile = h5py.File(outputFileName, 'w')
     meta = MeerkatMetaData(inFile)
 
+    # writing the data
     outFile.create_dataset('data', (meta.shape[0], meta.shape[1], meta.shape[2]))
     for i in range(meta.shape[2]):
         print("Using index %i of %i" % (i, meta.shape[2] - 1), end = "\r")
-        section = np.nan_to_num(get_section_raw(inFile, i))
-        outFile['data'][:,:,i] = section
-        del section # freeing memory
+        outFile['data'][:,:,i] = np.nan_to_num(get_section_raw(inFile, i))
 
+    # clean up
     print("\nConversion done!")
     inFile.close()
     outFile.close()
