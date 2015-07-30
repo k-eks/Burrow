@@ -3,4 +3,4 @@ required python modules:
 	numpy
 	PIL
 	h5py
-	#fabio
+	fabio
