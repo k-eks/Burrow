@@ -1,4 +1,5 @@
 import numpy as np
+import h5py
 
 def get_index_selection(sectionSelector):
     """Gets the index from the x in the string array, i.e. a sectionSelector of hkx returns 2"""
@@ -18,6 +19,24 @@ def is_hole(intensity):
 def is_untrusted(intensity):
     """Checks if the pixel of a frame is either defect or a gap"""
     return intensity < 0 and intensity >= -2
+
+
+def to_Yell_data(inputFileName, outputFileName):
+    inFile = h5py.File(inputFileName, 'r')
+    outFile = h5py.File(outputFileName, 'w')
+    meta = MeerkatMetaData(inFile)
+
+    outFile.create_dataset('data', (meta.shape[0], meta.shape[1], meta.shape[2]))
+    for i in range(meta.shape[2]):
+        print("Using index %i of %i" % (i, meta.shape[2] - 1), end = "\r")
+        section = np.nan_to_num(get_section_raw(inFile, i))
+        outFile['data'][:,:,i] = section
+        del section # freeing memory
+
+    print("\nConversion done!")
+    inFile.close()
+    outFile.close()
+
 
 
 class MeerkatMetaData:
