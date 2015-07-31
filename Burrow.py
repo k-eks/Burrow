@@ -1,4 +1,4 @@
-import cmd, sys, io, os.path
+import cmd, sys, io, os.path, os
 import fancy_output as out
 import analyze_data as ad
 import meerkat_tools as mt
@@ -13,6 +13,9 @@ class Burrow(cmd.Cmd):
 
     CODE_NO_ARGUMENTS = "No arguments are given."
     CODE_ODD_ARGUMENTS = "Wrong number of arguments are given."
+
+
+    completions = ["r200.h5"]
 
 
     #onblock "constructor" and "destructor"
@@ -97,6 +100,15 @@ class Burrow(cmd.Cmd):
                 out.warn("Active data set is now " + filealias)
             else:
                 out.error("File \"" + filename + "\" does not exist!")
+
+
+    def complete_openFile(self, text, line, begidx, endidx):
+        """Auto completion for files in openFile."""
+        allFiles = os.popen("ls").read().splitlines()
+        files = []
+        for f in allFiles:
+            if f.startswith(text): files.append(f)
+        return files
 
 
     def help_openFile(self):

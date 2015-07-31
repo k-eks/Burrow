@@ -100,7 +100,7 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     tilesy = int(templateFrame.data.shape[1] / subsize) + 1
     for subx in range(tilesx):
         for suby in range(tilesy):
-            print("\nWorking on sub %i of %i" % (subx * suby, (tilesx - 1) * (tilesy - 1)))
+            print("\nWorking on sub %i of %i" % ((subx + 1) * (suby + 1) - 1, (tilesx - 1) * (tilesy - 1)))
             # generation of the subframe size taking the border regions into account
             if (subx + 2) > tilesx:
                 width = templateFrame.data.shape[0] - subx * subsize
