@@ -60,7 +60,8 @@ def filler_frame_average(pathToFrames, pathToFilled):
                 if frame.data[x,y] == xds_tools.MASKED_BRAGG_INTENSITY:
                     bragg = find_Bragg_hole(np.array([]), frame.data, x, y)
                     dilated = dilation(bragg, frame.data.shape)
-                    dilated = remove_similar_pixel(dilated, bragg)
+                    masked = find_masked_pixel(dilated, frame.data)
+                    dilated = remove_similar_pixel(dilated, np.append(bragg, masked))
                     mean_intensity = 0
                     for pixel in dilated:
                         mean_intensity = mean_intensity + frame.data[pixel.x, pixel.y]
@@ -164,22 +165,31 @@ def dilation(hole, shape):
     dilated = remove_duplicate_pixel(dilated)
     return dilated
 
-def pixel_in_array(array, pixel):
+def pixel_in_array(searchArray, pixel):
     """Looks if a pixel object is in the given array"""
     result = False
-    for item in array:
+    for item in searchArray:
         if item.x == pixel.x and item.y == pixel.y:
             result = True
             break
     return result
 
-def remove_duplicate_pixel(array):
+def remove_duplicate_pixel(searchArray):
     """Removes all additional pixel objects which have the same coordinates"""
     unique = np.array([])
-    for item in array:
+    for item in searchArray:
         if not pixel_in_array(unique, item):
             unique = np.append(unique, item)
     return unique
+
+def find_masked_pixel(searchArray, data):
+    """Collects all pixel which belong to the masked area."""
+    maskedFree = np.array([])
+    for item in searchArray:
+        if data[item.x, item.y] == xds_tools.SIMPLE_UNTRUSTED:
+            maskedFree = np.append(maskedFree, item)
+    return maskedFree
+
 
 def remove_similar_pixel(searchArray, toRemove):
     """Removes all pixel objects in searchArray  which have the same coordinates as """
