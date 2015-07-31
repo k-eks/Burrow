@@ -85,7 +85,7 @@ def generate_chunked_background_percentile(pathToFrames, pathToSubtracted, nameT
     print("\nFinished processing of all chunks with the method of \"%s\"!" % chunking)
 
 
-def generate_subframe_background_percentile(pathToFrames, pathToSubtracted, nameTemplate,
+def generate_subframe_background_percentile(pathToFrames, pathToBackground, nameTemplate,
                                             frameRange, subsize, percentile):
     """Creates a background by only reading in parts of frames and puzzeling these parts together."""
     fileNames = []
@@ -100,7 +100,7 @@ def generate_subframe_background_percentile(pathToFrames, pathToSubtracted, name
     tilesy = int(templateFrame.data.shape[1] / subsize) + 1
     for subx in range(tilesx):
         for suby in range(tilesy):
-            print("\nWorking on sub %i/%i of %i/%i" % (subx, suby, tilesx - 1, tilesy - 1))
+            print("\nWorking on sub %i of %i" % (subx * suby, (tilesx - 1) * (tilesy - 1)))
             # generation of the subframe size taking the border regions into account
             if (subx + 2) > tilesx:
                 width = templateFrame.data.shape[0] - subx * subsize

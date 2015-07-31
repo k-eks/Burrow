@@ -100,7 +100,7 @@ class MeerkatMetaData:
         elif 'rebinned_data' in file:
             self.format = self.dtype_NORMAL
             self.shape = np.asarray(file['number_of_pixels']) #setting dimensions in pixel of the reconstructed file
-            self.hklRankge = np.asarray(file['maxind']) #hkl range of the reconstructed file
+            self.hklRange = np.asarray(file['maxind']) #hkl range of the reconstructed file
             self.steps = np.asarray(file['step_size']) #step sizes (hkl per pixel) of the reconstructed file
         else:
             raise TypeError("Given file does not match any currently known meerkat format.")
