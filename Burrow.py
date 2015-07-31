@@ -23,7 +23,7 @@ class Burrow(cmd.Cmd):
         self.currentData = None
         self.meta = None
         self.activeDset = None
-        self.currentImage = Image.new("RGB", (512,512)), "magenta"
+        self.currentImage = None
         pyplot.ion() #turning interactive mode on
         self.contrast_min = 0
         self.contrast_max = 20
@@ -237,6 +237,26 @@ class Burrow(cmd.Cmd):
 
     def help_saveData(self):
         print("Saves the last displayed image as a csv file.")
+        print("\t-o <filename> name of the output file")
+
+
+    def do_saveImage(self, argument):
+        """Saves the last displayed image as a csv file."""
+        errorcode, arguments = self.getArg(argument)
+        if self.currentImage != None:
+            if errorcode != -1 and errorcode != -2:
+                if "-o" in arguments:
+                    outfile = arguments[arguments.index("-o") + 1]
+                    self.currentImage.save(outfile)
+                    out.okay("Successfully saved as " + outfile + "!")
+                else:
+                    out.error("No output name given!")
+        else:
+            out.error("No image in buffer to save!")
+
+
+    def help_saveData(self):
+        print("Saves the last displayed image as a png file.")
         print("\t-o <filename> name of the output file")
 
 
