@@ -15,9 +15,6 @@ class Burrow(cmd.Cmd):
     CODE_ODD_ARGUMENTS = "Wrong number of arguments are given."
 
 
-    completions = ["r200.h5"]
-
-
     #onblock "constructor" and "destructor"
     def preloop(self):
         """Setup of all data and settings for further use."""
@@ -76,8 +73,8 @@ class Burrow(cmd.Cmd):
     def do_openFile(self, argument):
         """Opens a given file."""
         errorcode, arguments = self.getArg(argument)
-        filename = "reconstruction.h5" #a default filename is assumed
-        filealias = "default" #a default name is assumed
+        filename = "reconstruction.h5" # a default filename is assumed
+        filealias = "default" # a default name is assumed
         if errorcode != -2:
             if "-n" in arguments:
                 filename = arguments[arguments.index("-n") + 1]
@@ -90,7 +87,7 @@ class Burrow(cmd.Cmd):
                 file = h5py.File(filename, 'r')
                 out.okay("File successfully opened as " + filealias + "!")
                 self.activeDset = filealias
-                pyplot.close("all") #to prevent display issues
+                pyplot.close("all") # to prevent display issues
                 if filealias in self.dsetName:
                     self.dset[self.dsetName.index(filealias)] = file
                 else:
@@ -139,7 +136,7 @@ class Burrow(cmd.Cmd):
         out.warn("Only poor error checking implemented!")
         errorcode, arguments = self.getArg(argument)
         if errorcode != -1 and errorcode != -2:
-            index = 0 #default value
+            index = 0 # default value
             if "-s" in arguments:
                 section = arguments[arguments.index("-s") + 1]
             if "-i" in arguments:
@@ -255,8 +252,9 @@ class Burrow(cmd.Cmd):
                 if "a" in options: print("Active file alias: %s" % self.activeDset)
                 if "f" in options: print("File format: %s" % self.meta.format)
                 if "s" in options: print("Pixel dimensions: x = %s, y = %s, z = %s" % tuple(self.meta.shape))
-                if "i" in options: print("Pixel dimensions: h = %s, k = %s, l = %s" % tuple(self.meta.hklRange))
-                if "t" in options: print("Pixel dimensions: h/x = %s, k/y = %s, l/z = %s" % tuple(self.meta.steps))
+                if self.meta.format == mt.MeerkatMetaData.dtype_NORMAL: # others do not have the fields
+                    if "i" in options: print("Pixel dimensions: h = %s, k = %s, l = %s" % tuple(self.meta.hklRange))
+                    if "t" in options: print("Pixel dimensions: h/x = %s, k/y = %s, l/z = %s" % tuple(self.meta.steps))
         else:
             out.error("Open a data file first!")
 
