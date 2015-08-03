@@ -2,10 +2,11 @@ import numpy as np
 import os.path
 import fabio
 import xds_tools
+import meerkat_tools
 import glob
 
 
-def punch_Bragg(bgFilePath, sampleFrame, pathToFrames, pathToPunched, maskOption):
+def punch_Bragg(bgFilePath, sampleFrame, pathToFrames, pathToPunched, maskOption, hotPixel):
     """Masks all  Bragg peaks using XDS BGK files."""
     frameShape = sampleFrame.data.shape
     # generating the background data
@@ -43,6 +44,29 @@ def punch_Bragg(bgFilePath, sampleFrame, pathToFrames, pathToPunched, maskOption
                 else:
                     raise TypeError("Specified masking option \"%s\" does not exist!" % maskOption)
         frame.data = punched
+        # punching of the hot pixel
+        for p in hotPixel:
+            frame.data[p.x, p.y] = xds_tools.MASKED_BRAGG_INTENSITY
         frame.write(pathToPunched + os.path.basename(imageFile))
         del frame # freeing memory
     print("\nPunching complete!")
+
+
+def find_hot_pixel(hotFilePath, hotThreshold):
+    """Reads out all pixel in the given frame which are above the given threshold."""
+    hotFrame = fabio.open(hotFilePath)
+    hotPixel = []
+    print("looking for hot pixel...")
+    for x in range(hotFrame.data.shape[0]):
+        for y in range(hotFrame.data.shape[1]):
+            print("Searching at x = %i y = %i          " %(x,y ), end="\r")
+            if hotFrame.data[x, y] > hotThreshold:
+                hotPixel.append(meerkat_tools.Pixel(x, y))
+    # print out
+    if len(hotPixel) > 0:
+        print("\nFound hot pixel:")
+        for p in hotPixel:
+            print(p)
+    else:
+        print("\nNo hot pixel were found!")
+    return hotPixel

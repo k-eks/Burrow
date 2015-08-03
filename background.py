@@ -123,7 +123,7 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
                suby * subsize : suby * subsize + height] = get_percentile(subFrame, subFrame.shape, percentile)
 
     templateFrame.data = bg
-    templateFrame.write(pathToSubtracted + "bg_subframe.cbf")
+    templateFrame.write(pathToBackground + "bg_subframe.cbf")
 
 
 def generate_bg_master(pathToBgFrames, templateFrame, frameRange, percentile, mean=False):
