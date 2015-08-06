@@ -1,0 +1,22 @@
+Cheat sheet
+===========
+
+when I say "run script.py" it referes to the correct function inside the file
+
+1) XDS
+    1a) Make a full refinement in XDS
+    1b) Open the BGKPIX.cbf in Albula and save it as a h5 file
+    1c) You will need the GXPARMS file MUCH later for the meerkat reconstructions
+
+2) BG and hot pixel filtering
+    2a) run background.py with a percentile of around 3, this is your background
+    2b) run background.py again, this time with a high percentile of >50. All pixel with an intensity way beyond average are the hot pixel
+    2c) run puncher.py to generate a list of hot pixel, you will need this list in the next step
+
+3) Punch and fill (easy enough)
+    3a) run puncher.py
+    3b) run filler.py
+
+
+Additional info:
+the meerkat_tools provides a function for converting the meerkat data format into the yell data format and a function for generating weights, this is required to mask the gaps of the detector
