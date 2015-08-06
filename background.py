@@ -126,7 +126,7 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     templateFrame.write(pathToBackground + "bg_subframe.cbf")
 
 
-def generate_bg_master(pathToBgFrames, templateFrame, frameRange, percentile, mean=False):
+def generate_bg_chunked_master(pathToBgFrames, templateFrame, frameRange, percentile, mean=False):
     """Turns all generated background chunks into a single background frame."""
     bg = np.zeros((templateFrame.data.shape[0], templateFrame.data.shape[1]))
     chunk = get_sequential_chunk(pathToBgFrames, "bg%i.cbf", 0, frameRange)

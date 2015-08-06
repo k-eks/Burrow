@@ -143,9 +143,14 @@ class Burrow(cmd.Cmd):
                 index = arguments[arguments.index("-i") + 1]
 
             trans = ad.Transformations(self.dataset, section)
-            self.currentData, x = ad.crossection_data(self.dataset, float(index), trans)
+            if self.meta.format == mt.MeerkatMetaData.dtype_NORMAL:
+                self.currentData, x = ad.crossection_data(self.dataset, float(index), trans)
+            else:
+                self.currentData = self.dataset['data'][:,:,int(index)]
+                # TODO requires indexing
             self.currentData = np.tile(self.currentData, (1,1))
             self.currentData = ad.hextransform(self.currentData)
+
             self.replot()
         elif errorcode == -1:
             out.error("No arguments supplied!")
@@ -321,12 +326,12 @@ class Burrow(cmd.Cmd):
         else:
             dpi = width
         pyplot.figure(figsize=(height/99.9,width/99.9), dpi=dpi) #creates a display mash-up, corrected below
-        #The above line is a critical when it comes to image size
+        # The above line is a critical when it comes to image size
         pyplot.axes([0,0,1,1])
         pyplot.axis("off")
         pyplot.imshow(self.currentData, interpolation='nearest', clim=[self.contrast_min, self.contrast_max], cmap=self.cmaps[self.cmap_selection])
         self.currentImage = self.plot2img(pyplot.figure)
-        #the following two lines remove the display mash up produced above
+        # the following two lines remove the display mash up produced above
         pyplot.close(len(pyplot.get_fignums()) - 1)
         pyplot.close(len(pyplot.get_fignums()) - 1)
         pyplot.show()
@@ -352,17 +357,17 @@ class Burrow(cmd.Cmd):
 
 if __name__ == '__main__':
     """Main loop creation, can run in terminal mode or script mode."""
-    if len(sys.argv) == 2: #in this case, it is assumed that the user provides a file with a list of commands
+    if len(sys.argv) == 2: # in this case, it is assumed that the user provides a file with a list of commands
         input = open(sys.argv[1], 'rt')
         try:
-            #setting up silent script mode
+            # setting up silent script mode
             interpreter = Burrow(stdin=input)
-            interpreter.use_rawinput = False #required for file input to read new lines etc correctly
-            interpreter.prompt = "" #silent mode
+            interpreter.use_rawinput = False # required for file input to read new lines etc correctly
+            interpreter.prompt = "" # silent mode
             interpreter.cmdloop()
         finally:
             input.close()
-    elif len(sys.argv) == 1: #plain old commandline
+    elif len(sys.argv) == 1: # plain old commandline
         interpreter = Burrow()
         interpreter.cmdloop()
     else:
