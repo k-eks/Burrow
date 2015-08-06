@@ -1,10 +1,6 @@
 import numpy as np
 import h5py
 
-def get_index_selection(sectionSelector):
-    """Gets the index from the x in the string array, i.e. a sectionSelector of hkx returns 2"""
-    return sectionSelector.find("x")
-
 
 def get_section_raw(file, pixel):
     """Returns a crosssection of hkx by pixel height."""
@@ -24,6 +20,20 @@ def is_hole(intensity):
 def is_untrusted(intensity):
     """Checks if the pixel of a frame is either defect or a gap"""
     return intensity < 0 and intensity >= -2
+
+
+def get_index_selection(sectionSelector):
+    """Gets the index from the x in the string array, i.e. a sectionSelector of hkx returns 2"""
+    return sectionSelector.find("x")
+
+
+def get_slicing_indices(sectionSelector, pixelIndex, shape):
+    # if is valid section
+    i = get_index_selection(sectionSelector)
+    slicer = [0, shape[0], 0, shape[1], 0, shape[2]]
+    slicer[i * 2] = pixelIndex
+    slicer[i * 2 + 1] = pixelIndex + 1
+    return slicer
 
 
 def to_Yell_data(inputFileName, outputFileName):

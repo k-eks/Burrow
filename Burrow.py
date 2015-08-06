@@ -142,12 +142,12 @@ class Burrow(cmd.Cmd):
             if "-i" in arguments:
                 index = arguments[arguments.index("-i") + 1]
 
-            trans = ad.Transformations(self.dataset, section)
             if self.meta.format == mt.MeerkatMetaData.dtype_NORMAL:
+                trans = ad.Transformations(self.dataset, section)
                 self.currentData, x = ad.crossection_data(self.dataset, float(index), trans)
             else:
-                self.currentData = self.dataset['data'][:,:,int(index)]
-                # TODO requires indexing
+                slicer = mt.get_slicing_indices(section, int(index), self.meta.shape)
+                self.currentData = (self.dataset['data'][slicer[0]:slicer[1],slicer[2]:slicer[3],slicer[4]:slicer[5]]).squeeze()
             self.currentData = np.tile(self.currentData, (1,1))
             self.currentData = ad.hextransform(self.currentData)
 
