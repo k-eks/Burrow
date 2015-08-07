@@ -260,7 +260,7 @@ class Burrow(cmd.Cmd):
             out.error("No image in buffer to save!")
 
 
-    def help_saveData(self):
+    def help_saveImage(self):
         print("Saves the last displayed image as a png file.")
         print("\t-o <filename> name of the output file")
 
