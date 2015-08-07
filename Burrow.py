@@ -4,6 +4,7 @@ import analyze_data as ad
 import meerkat_tools as mt
 import h5py
 import numpy as np
+import math
 from PIL import Image
 from matplotlib import pyplot
 from matplotlib import colors as colorrange
@@ -133,7 +134,9 @@ class Burrow(cmd.Cmd):
 
     def do_plothkl(self, argument):
         """plots a section of meerkat"""
+        """Has some hard coded undistortion functions in it."""
         out.warn("Only poor error checking implemented!")
+        out.warn("Only suitable for trigonal and hexagonal crystals!")
         errorcode, arguments = self.getArg(argument)
         if errorcode != -1 and errorcode != -2:
             index = 0 # default value
@@ -147,9 +150,17 @@ class Burrow(cmd.Cmd):
                 self.currentData, x = ad.crossection_data(self.dataset, float(index), trans)
             else:
                 slicer = mt.get_slicing_indices(section, int(index), self.meta.shape)
+                # be careful: the slicing in i,:,: does a weird x-y swap
                 self.currentData = (self.dataset['data'][slicer[0]:slicer[1],slicer[2]:slicer[3],slicer[4]:slicer[5]]).squeeze()
             self.currentData = np.tile(self.currentData, (1,1))
-            self.currentData = ad.hextransform(self.currentData)
+            # the following block is the hard coded undistortion of my trigonal crystals
+            if section == "hkx":
+                self.currentData = ad.hextransform(self.currentData)
+            elif section == "xkl" or section == "hxl":
+                # counteracting the weird slicing
+                a = math.radians(90)
+                T = np.array([[math.cos(a), math.sin(a)],[-math.sin(a), math.cos(a)]])
+                self.currentData = ad.imtransform_centered(self.currentData, T)
 
             self.replot()
         elif errorcode == -1:
@@ -343,14 +354,6 @@ class Burrow(cmd.Cmd):
         pyplot.savefig(buf, format='png')
         buf.seek(0)
         return Image.open(buf)
-
-    def saveCurrentImage(self, filename):
-        """Saves the last image created/displayed."""
-        try:
-            self.currentImage.save(filename)
-            out.okay(filename + " successfully saved!")
-        except:
-            raise
     #offblock
     #end of internal functions
     #offblock
