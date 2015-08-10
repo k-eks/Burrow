@@ -28,6 +28,7 @@ def get_index_selection(sectionSelector):
 
 
 def get_slicing_indices(sectionSelector, pixelIndex, shape):
+    """Generates array indexing to slice the according section."""
     # if is valid section
     i = get_index_selection(sectionSelector)
     slicer = [0, shape[0], 0, shape[1], 0, shape[2]]
@@ -56,7 +57,7 @@ def to_Yell_data(inputFileName, outputFileName):
     outFile.close()
 
 
-def mask_gaps(inputFileName, outputFileName):
+def mask_gaps(inputFileName, outputFileName, maskIntensity):
     """Creates a masking file useable by Yell."""
     # preparing files
     inFile = h5py.File(inputFileName, 'r')
@@ -71,9 +72,8 @@ def mask_gaps(inputFileName, outputFileName):
         for x in range(meta.shape[0]):
             for y in range(meta.shape[1]):
                 # 0 is the non covered area
-                # values way below -20 are part of the grid
-                # this is a remainder of the punching algorithm
-                if section[x, y] == 0 or section[x, y] < -20:
+                # values way below maskIntensity are part of the grid or defect pixels
+                if section[x, y] == maskIntensity or section[x, y] < -20:
                     section[x, y] = 0
                 else:
                     section[x, y] = 1
