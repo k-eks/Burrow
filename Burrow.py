@@ -276,6 +276,17 @@ class Burrow(cmd.Cmd):
         print("\t-o <filename> name of the output file")
 
 
+    def do_unplot(self, argument):
+        """Closes all plot windows."""
+        # errorcode, arguments = self.getArg(argument)
+        pyplot.close("all")
+
+
+    def help_unplot(self):
+        """help text for the unplot command."""
+        print("Close all visible plots.")
+
+
     def do_info(self, argument):
         """Prints the meta data."""
         if self.meta != None:
