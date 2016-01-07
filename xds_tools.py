@@ -25,7 +25,7 @@ def numericalSort(value):
 def bgFromH5(pathToFile, frameShape):
     """Turns the background h5-file created by Albula into a numpy array"""
     file = h5py.File(pathToFile, 'r')
-    a = np.asarray(file['entry/data/data_000001'])
+    a = np.asarray(file['entry/data/data'])
     bg = a.reshape((frameShape[0], frameShape[1], 1))[:,:,0]
     return bg
 
