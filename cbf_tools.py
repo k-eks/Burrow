@@ -66,10 +66,13 @@ def sumup_frames(pathToFrames, sampleFrame, outputPath):
     """
     sampleFrame.data = np.zeros(sampleFrame.data.shape) # clear data
     for file in glob.glob(pathToFrames + "/*.cbf"):
-        frame = fabio.open(file)
-        print("Working on %s" % frame.filename, end='\r')
-        sampleFrame.data += frame.data
-        del frame # clean up memory
+        try:
+            frame = fabio.open(file)
+            print("Working on %s" % frame.filename, end='\r')
+            sampleFrame.data += frame.data
+            del frame # clean up memory
+        except PermissionError:
+            print("\nNot allowed to read: %s\n" % frame.filename)
     outputPath = outputPath + "/sumup_" + get_main_folder_name(pathToFrames) + ".cbf"
     print("\nWriting to %s" % outputPath)
     sampleFrame.save(outputPath) # this does not overwrite the original frame used as a sample
