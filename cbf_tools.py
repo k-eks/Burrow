@@ -4,6 +4,7 @@ import os.path
 import glob
 import shutil
 import numpy as np
+import helping_tools
 
 
 def get_flux(frame):
@@ -58,6 +59,24 @@ def get_main_folder_name(path):
     return parts[l - 1 - modifier]
 
 
+def find_faulty_frames(pathToFrames):
+    """Checks if all frames are readable by fabio.
+    pathToFrames ... string path to the folder which contains the frames
+    returns ... list[string] all files which are faulty
+    """
+    print("Searching for faulty frames in %s" % pathToFrames)
+    faulty = []
+    for file in glob.glob(pathToFrames + "/*.cbf"):
+        try:
+            frame = fabio.open(file)
+            print("Working on %s" % frame.filename, end='\r')
+            del frame # clean up memory
+        except Exception:
+            faulty.append(file) # create a list of file names
+    print("\nDone, found %s faulty frames in %s.\n%s" % (len(faulty), pathToFrames, faulty))
+    return faulty
+
+
 def sumup_frames(pathToFrames, sampleFrame, outputPath):
     """Makes a pixelwise summation of the frame data.
     pathToFrames ... string folder where the frames are located
@@ -72,7 +91,7 @@ def sumup_frames(pathToFrames, sampleFrame, outputPath):
             sampleFrame.data += frame.data
             del frame # clean up memory
         except PermissionError:
-            print("\nNot allowed to read: %s\n" % frame.filename)
+            print("\nNot allowed to read: %s\n" % file)
     outputPath = outputPath + "/sumup_" + get_main_folder_name(pathToFrames) + ".cbf"
     print("\nWriting to %s" % outputPath)
     sampleFrame.save(outputPath) # this does not overwrite the original frame used as a sample
@@ -90,6 +109,7 @@ def folder_walker_sumup(absolutePathToStart, conditionalFileName, sampleFrame, o
     sampleFrame ... fabio.frame template for the data to read out the shape and to create a framework for the result
     outputPath ... string path to folder where the resulting frame should be saved
     """
+    # TODO: reduce to frame folders with helping_tools.find_named_folders?
     for path, folders, files in os.walk(absolutePathToStart): # os.walk function requires the other variables
         for name in folders:
             fullPath = path + "/" + name + "/"
@@ -110,14 +130,15 @@ def get_set_revolution_size(pathToFrames):
     setSize = 0
     revolutionSize = 0
     for fileName in os.listdir(pathToFrames):
-        # calculating the set size from frame name
-        index = fileName.find("p_") # this is between the revolutions and frame number
-        currentSize = int (fileName[index - 1 : index])
-        revolutionSize = max(revolutionSize, currentSize)
-        # calculating the revolution size from frame name
-        index = fileName.find(".cbf")
-        currentSize = int (fileName[index - 4 : index])
-        setSize = max(setSize, currentSize)
+        if ".cbf" in fileName:
+            # calculating the set size from frame name
+            index = fileName.find("p_") # this is between the revolutions and frame number
+            currentSize = int (fileName[index - 1 : index])
+            revolutionSize = max(revolutionSize, currentSize)
+            # calculating the revolution size from frame name
+            index = fileName.find(".cbf")
+            currentSize = int (fileName[index - 4 : index])
+            setSize = max(setSize, currentSize)
     return setSize + 1, revolutionSize
 
 
@@ -136,7 +157,10 @@ def find_lost_frames_and_replace(pathToFrames, nameTempalte, setSize, revolution
             if not os.path.isfile(frameName):
                 print("\nMissing: ", frameName)
                 # replace the missing frame with the previous one
-                shutil.copy(pathToFrames + (nameTempalte % (r + 1, s - 1)), frameName)
+                previousFrameName = pathToFrames + (nameTempalte % (r + 1, s - 1))
+                shutil.copy(previousFrameName, frameName)
+                os.chmod(frameName, 0o644) # if working on a server, the rights might get screwed up
+                # 0o is an octal number, rigths are set according to UNIX
                 print("Inserted: %s\n" % frameName)
     print("\nDone!")
 
@@ -147,6 +171,7 @@ def folder_walker_lost_frame(absolutePathToStart, conditionalFileName, nameTempa
     conditionalFileName ... string only execute the find and replace this file is in folder, i.e. the first frame
     nameTempalte ... string template string from which the frame names are generated
     """
+    # TODO: reduce to frame folders with helping_tools.find_named_folders?
     for path, folders, files in os.walk(absolutePathToStart): # os.walk function requires the other variables
         for name in folders:
             fullPath = path + "/" + name + "/"
@@ -158,3 +183,28 @@ def folder_walker_lost_frame(absolutePathToStart, conditionalFileName, nameTempa
                 find_lost_frames_and_replace(fullPath, nameTempalte, setSize, revolutions)
             else:
                 print("Skipping work in %s \n" % fullPath)
+
+
+def find_and_rename_zero_frame(pathToFrames, searchSequence, replaceSequence):
+    """Looks for frames which have a given sequence in their file name and replaces it.
+    pathToFrames ... string path where to look for the frames
+    searchSequence ... string all files which contain this string will be renamed
+    replaceSequence ... string this string replaces the the found string in the file name
+    """
+    for fileName in glob.glob(os.path.join(pathToFrames, "*%s*" % searchSequence)): # search for the files
+        newFileName = fileName.replace(searchSequence, replaceSequence)
+        os.rename(fileName, newFileName)
+        print("Renamed %s in folder %s" % [fileName, pathToFrames])
+
+
+def folder_walker_find_and_rename_zero_frame(pathToRoot, searchSequence, replaceSequence):
+    """Performs a find_and_rename_zero_frame in all frame folders below a given start point.
+    pathToRoot ... string path where to look walk down and look for the frame folders
+    searchSequence ... string all files which contain this string will be renamed
+    replaceSequence ... string this string replaces the the found string in the file name
+    """
+    folders = helping_tools.find_named_folders(pathToRoot, "frames")
+    for folder in folders:
+        print("Current folder is %s" % folder)
+        find_and_rename_zero_frame(folder, searchSequence, replaceSequence)
+    print("Done!")
