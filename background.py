@@ -1,3 +1,8 @@
+import sys
+sys.path.append("/cluster/home/hoferg/python/lib64/python2.7/site-packages")
+sys.path.append("/cluster/home/hoferg/python/lib64/python3.3/site-packages")
+from __future__ import print_function # python 2.7 compatibility
+
 import numpy as np
 import os.path
 import fabio
@@ -13,7 +18,13 @@ CHUNK_RAN = "random frame chunking"
 
 
 def get_sequential_chunk(pathToFrames, nameTemplate, chunkStart, chunkSize):
-    """Reads frames in a squential manner."""
+    """Reads a defined number of frames in a squential manner into an array.
+    pathToFrames ... string location of the folder which contains the frames
+    nameTemplate ... string format of the frame names
+    chunkStart ... int frame number from which to start
+    chunkSize ... int number of frames which should be read
+    returns numpy.array3d of all the frame data
+    """
     # creating the file names for iteration
     fileNames = []
     for i in range(chunkSize):
@@ -34,7 +45,13 @@ def get_sequential_chunk(pathToFrames, nameTemplate, chunkStart, chunkSize):
 
 
 def get_skiping_chunk(pathToFrames, nameTemplate, frameRange, chunkStart, chunkSize):
-    """Reads only every frameRange / chunkSize frame."""
+    """Reads only every other frame and stacks their data to a chunk.
+    pathToFrames ... string location of the folder which contains the frames
+    nameTemplate ... string format of the frame names
+    frameRange ... int maximum number of frames over which to run the algorithm
+    chunkStart ... int frame number from which to start
+    chunkSize ... int number of frames which should be read
+    """
     # creating the file names for iteration
     fileNames = []
     for i in range(chunkSize):
@@ -70,7 +87,11 @@ def get_percentile(chunk, frameShape, percentile):
 def generate_chunked_background_percentile(pathToFrames, pathToSubtracted, nameTemplate,
                                            frameRange, templateFrame, chunkSize,
                                            percentile, chunking=CHUNK_SKI):
-    """Chunks frames and creates  partial background frames for these chunks."""
+    """Chunks frames and creates  partial background frames for these chunks.
+    pathToFrames ... string location of the folder which contains the frames
+    nameTemplate ... string format of the frame names
+    frameRange ... int maximum number of frames over which to run the algorithm
+    """
     for i in range(int(frameRange / chunkSize)):
         print("Using chunk " + str(i + 1) + " of " + str(int(frameRange / chunkSize)))
         # determination of the chunking method
@@ -87,7 +108,10 @@ def generate_chunked_background_percentile(pathToFrames, pathToSubtracted, nameT
 
 def generate_subframe_background_percentile(pathToFrames, pathToBackground, nameTemplate,
                                             frameRange, subsize, percentile):
-    """Creates a background by only reading in parts of frames and puzzeling these parts together."""
+    """Creates a background by only reading in parts of frames and puzzeling these parts together.
+    pathToFrames ... string location of the folder which contains the frames
+    nameTemplate ... string format of the frame names
+    """
     fileNames = []
     for i in range(frameRange):
         fileNames.append(pathToFrames + (nameTemplate % (i + 1)))
@@ -127,7 +151,10 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
 
 
 def generate_bg_chunked_master(pathToBgFrames, templateFrame, frameRange, percentile, mean=False):
-    """Turns all generated background chunks into a single background frame."""
+    """Turns all generated background chunks into a single background frame.
+    pathToBgFrames ... string location of the folder which contains the partial frame backgrounds
+    frameRange ... int maximum number of frames over which to run the algorithm
+    """
     bg = np.zeros((templateFrame.data.shape[0], templateFrame.data.shape[1]))
     chunk = get_sequential_chunk(pathToBgFrames, "bg%i.cbf", 0, frameRange)
     for i in range(frameRange):
@@ -153,7 +180,9 @@ def generate_bg_chunked_master(pathToBgFrames, templateFrame, frameRange, percen
 
 def subtract_background(bgFrame, hotFrame, pathToFrames, pathToSubtracted, hotPixelStart,
                         maskingOption, pathToBKGPIX):
-    """Subtracts the background."""
+    """Subtracts the background.
+    pathToFrames ... string location of the folder which contains the frames
+    """
     frameShape = bgFrame.data.shape
     bg = bgFrame.data
     print("Generating pixel mask.")
