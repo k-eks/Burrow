@@ -2,7 +2,11 @@ import re
 import numpy as np
 import fabio
 import meerkat_tools
+import helping_tools
 import h5py
+import shutil
+import os
+import os.path
 
 # some properties
 DEFECTIVE = -2
@@ -13,6 +17,8 @@ SIMPLE_UNTRUSTED = -666666
 
 FULLMASK = "Masking setting which differntiates between untrusted, defective and hot pixel."
 SIMPLEMASK = "Masking setting which uses a simplified mask from the BKGPIX frame."
+
+UPDATE_UNITCELL = "Option switch to update the unit cell in XDS."
 
 def numericalSort(value):
     """Creates a natural sorting function for file names, just for a nice display"""
@@ -96,3 +102,51 @@ def restore_pixel_mask(frame, defective, untrusted, hot):
     data[untrusted] = UNTRUSTED
     data[hot] = DEFECTIVE
     return np.reshape(data, frame.data.shape)
+
+
+def XDS_update(pathToXdsFiles, updateOptions):
+    """Makes a backup of the old XDS.INP file and creates a new updated one.
+    pathToXdsFiles ... string location of XDS input and output files
+    updateOptions ... array[string] specifies which parts should be updated, see constants for possibilities
+    """
+    XDSPath = os.path.join(pathToXdsFiles, "XDS.INP")
+    IDXREFPath = os.path.join(pathToXdsFiles, "IDXREF.LP")
+    # make a backup of the old XDS.INP
+    shutil.copy(XDSPath, os.path.join(pathToXdsFiles, "%s_XDS.INP" % helping_tools.timestamp()))
+    print("Created backup of XDS.INP")
+    # read the XDS.INP file into an array for later manipulations
+    xds = [line.rstrip('\n') for line in open(XDSPath)]
+    # going through the options
+    for option in updateOptions:
+        # the unit cell should be updated from the refinement
+        if option == UPDATE_UNITCELL:
+            print("Updating unit cell ...")
+            oldCellIndex = None
+            newCell = None # need later formating
+            # search for the old cell
+            for i in range(len(xds)):
+                if "UNIT_CELL_CONSTANTS" in xds[i]:
+                    oldCellIndex = i
+                    break # no use to continue the loop, only one cell entry possible
+            if oldCellIndex == None:
+                raise IndexError("No unit cell entry found!")
+            print("Old cell is %s" % xds[i].split('=')[1])
+
+            # hunt the new unit cell
+            with open(IDXREFPath) as file:
+                for line in file:
+                    if "UNIT CELL PARAMETERS" in line:
+                        newCell = line
+                        # no break, multiple UNIT CELL PARAMETERS passges in file, the last one is the accurate one
+            newCell = " ".join(newCell.split()[3:]) # format for output
+            print("New cell is %s" % newCell)
+            newCell = "UNIT_CELL_CONSTANTS= %s !updated by XDS_tools.py" % newCell
+            xds[oldCellIndex] = newCell
+
+    # wirte the new XDS file
+    print("Writing new XDS.INP ...")
+    os.remove(XDSPath)
+    XDSFile = open(XDSPath, 'w')
+    for line in xds:
+        XDSFile.write("%s\n" % line)
+    print("Done!")
