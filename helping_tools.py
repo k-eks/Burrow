@@ -1,5 +1,9 @@
+import sys
+sys.path.append("/cluster/home/hoferg/python/lib64/python2.7/site-packages")
+
 import os
 import os.path
+import time
 
 
 def find_named_folders(rootPath, namedFolder):
@@ -19,3 +23,10 @@ def find_named_folders(rootPath, namedFolder):
                 folderPaths.append(os.path.join(path, name))
     print("Found %s folder paths!" % len(folderPaths))
     return folderPaths
+
+
+def timestamp():
+    """Generates the current timestamp.
+    returns string the current time stamp in the format of YYMMDD-HHMMSS
+    """
+    return time.strftime("%y%m%d-%H%M%S")

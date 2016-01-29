@@ -1,3 +1,6 @@
+import sys
+sys.path.append("/cluster/home/hoferg/python/lib64/python2.7/site-packages")
+
 import numpy as np
 import os.path
 import fabio

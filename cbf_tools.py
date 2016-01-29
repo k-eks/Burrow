@@ -1,3 +1,6 @@
+import sys
+sys.path.append("/cluster/home/hoferg/python/lib64/python2.7/site-packages")
+
 import fabio
 import os
 import os.path
@@ -191,10 +194,12 @@ def find_and_rename_zero_frame(pathToFrames, searchSequence, replaceSequence):
     searchSequence ... string all files which contain this string will be renamed
     replaceSequence ... string this string replaces the the found string in the file name
     """
-    for fileName in glob.glob(os.path.join(pathToFrames, "*%s*" % searchSequence)): # search for the files
+    searchString = "*%s*" % searchSequence
+    searchString = os.path.join(pathToFrames, searchString)
+    for fileName in glob.glob(searchString):
         newFileName = fileName.replace(searchSequence, replaceSequence)
         os.rename(fileName, newFileName)
-        print("Renamed %s in folder %s" % [fileName, pathToFrames])
+        print("Renamed %s in folder %s" % (fileName, pathToFrames))
 
 
 def folder_walker_find_and_rename_zero_frame(pathToRoot, searchSequence, replaceSequence):

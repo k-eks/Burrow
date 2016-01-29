@@ -1,10 +1,14 @@
-import cmd, sys, io, os.path, os
+import sys
+sys.path.append("/cluster/home/hoferg/python/lib64/python2.7/site-packages")
+
+import cmd, io, os.path, os
 import fancy_output as out
 import analyze_data as ad
 import meerkat_tools as mt
 import h5py
 import numpy as np
 import math
+import fabio
 from PIL import Image
 from matplotlib import pyplot
 from matplotlib import colors as colorrange
@@ -334,9 +338,11 @@ class Burrow(cmd.Cmd):
             out.error("Invalid number of arguments!")
         return errorcode, arguments
 
+
     def replot(self):
         """pyplot distinguishes between 1D and 2D data, this function should call the right method."""
         self.plot()
+
 
     def plot(self):
         """Uses pyplot to draw 2D data."""
