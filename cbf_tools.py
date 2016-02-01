@@ -1,7 +1,9 @@
+from __future__ import print_function # python 2.7 compatibility
+
 import sys
 sys.path.append("/cluster/home/hoferg/python/lib64/python2.7/site-packages")
 sys.path.append("/cluster/home/hoferg/python/lib64/python3.3/site-packages")
-from __future__ import print_function # python 2.7 compatibility
+
 
 import fabio
 import os
@@ -126,8 +128,8 @@ def folder_walker_sumup(absolutePathToStart, conditionalFileName, sampleFrame, o
                 print("Skipping work in %s \n" % fullPath)
 
 
-def get_set_revolution_size(pathToFrames):
-    """Uses the common file name convention to read out the number of revolutions and the amount of frames per set from the file names in a given directory
+def get_set_revolution_size_dataset(pathToFrames):
+    """Uses the common file name convention to read out the number of revolutions and the amount of frames per set from the file names in a given directory.
     pathToFrames ... string path to where the cbf files are located
     returns setSize ... int the number of frames per revolution
     returns revolutions ... int the number revolutions
@@ -146,6 +148,36 @@ def get_set_revolution_size(pathToFrames):
             setSize = max(setSize, currentSize)
     return setSize + 1, revolutionSize
 
+
+def get_set_revolution_size_frame(fileName):
+    """Uses the common file name convention to read out the current revolution and the frame number
+    fileName ... string path to where the frame is located
+    returns frameNumber ... int the number of frames per revolution
+    returns revolutions ... int the number revolutions
+    """
+    # calculating the set size from frame name
+    index = fileName.find("p_") # this is between the revolutions and frame number
+    revolution = int (fileName[index - 1 : index])
+    # calculating the revolution size from frame name
+    index = fileName.find(".cbf")
+    frameNumber = int (fileName[index - 4 : index])
+    return frameNumber, revolution
+
+
+def rename_frames(pathToFrames, newName):
+    """Changes the part before the underscore in the frame filename.
+    pathToFrames ... string location of the frames
+    newName ... string the new idetifier for the frame
+    """
+    print("starting renaming\n")
+    for fileName in glob.glob(os.path.join(pathToFrames, "*.cbf")):
+        # make sure that no underscores in folders are taken as a starting point
+        fileName = os.path.basename(fileName)
+        length = fileName.find("_")
+        newFileName = newName + fileName[length + 1 :]
+        os.rename(os.path.join(pathToFrames, fileName), os.path.join(pathToFrames, newFileName))
+        print("Renamed %s" % newFileName, end='\r')
+    print("\nDone!")
 
 
 def find_lost_frames_and_replace(pathToFrames, nameTempalte, setSize, revolutions):
