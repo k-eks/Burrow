@@ -234,8 +234,8 @@ def get_xds_index(xds, entry):
 
 def copy_xds_template(pathToXds, pathToDestination):
     """Copies a xds template input file to a new location.
-    pathToXds ... string path to flder which contains XDS.INP
+    pathToXds ... string path to the xds file, file name including, will be renamed to XDS.INP.
     pathToDestination ... string path were the new copy should be placed
     """
-    shutil.copy(os.path.join(pathToXds, "XDS.INP"), os.path.join(pathToDestination, "XDS.INP"))
+    shutil.copy(pathToXds), os.path.join(pathToDestination, "XDS.INP"))
     # I'm not exactly shure why I need the function
