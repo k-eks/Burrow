@@ -1,7 +1,8 @@
+from __future__ import print_function # python 2.7 compatibility
+
 import sys
 sys.path.append("/cluster/home/hoferg/python/lib64/python2.7/site-packages")
 sys.path.append("/cluster/home/hoferg/python/lib64/python3.3/site-packages")
-from __future__ import print_function # python 2.7 compatibility
 
 import re
 import numpy as np
@@ -24,6 +25,10 @@ FULLMASK = "Masking setting which differntiates between untrusted, defective and
 SIMPLEMASK = "Masking setting which uses a simplified mask from the BKGPIX frame."
 
 UPDATE_UNITCELL = "Option switch to update the unit cell in XDS."
+UPDATE_FRAMENAMETEMPLATE = "Option switch to set a new frame path, string adding new path to this option="
+UPDATE_DATARANGE = "Option switch to change the frame range, string adding new lower,upper range to this="
+UPDATE_SPOTRANGE = "Option switch to change the spot range, string adding new lower,upper range to this="
+UPDATE_BGRANGE = "Option switch to change the background range, string adding new lower,upper range to this="
 
 def numericalSort(value):
     """Creates a natural sorting function for file names, just for a nice display"""
@@ -126,13 +131,8 @@ def XDS_update(pathToXdsFiles, updateOptions):
         # the unit cell should be updated from the refinement
         if option == UPDATE_UNITCELL:
             print("Updating unit cell ...")
-            oldCellIndex = None
-            newCell = None # need later formating
             # search for the old cell
-            for i in range(len(xds)):
-                if "UNIT_CELL_CONSTANTS" in xds[i]:
-                    oldCellIndex = i
-                    break # no use to continue the loop, only one cell entry possible
+            oldCellIndex = get_xds_index(xds, "UNIT_CELL_CONSTANTS")
             if oldCellIndex == None:
                 raise IndexError("No unit cell entry found!")
             print("Old cell is %s" % xds[i].split('=')[1])
@@ -145,9 +145,70 @@ def XDS_update(pathToXdsFiles, updateOptions):
                         # no break, multiple UNIT CELL PARAMETERS passges in file, the last one is the accurate one
             newCell = " ".join(newCell.split()[3:]) # format for output
             print("New cell is %s" % newCell)
-            newCell = "UNIT_CELL_CONSTANTS= %s !updated by XDS_tools.py" % newCell
+            newCell = "UNIT_CELL_CONSTANTS= %s !updated by xds_tools.py" % newCell
             xds[oldCellIndex] = newCell
 
+        # change the name template and path
+        if UPDATE_FRAMENAMETEMPLATE in option:
+            print("Updating name template")
+            newTemplate = option.split('=')[1]
+            oldTemplateIndex = get_xds_index(xds, "NAME_TEMPLATE_OF_DATA_FRAMES")
+            print("Old name template is %s" % xds[oldTemplateIndex].split('=')[1])
+            newTemplate = "NAME_TEMPLATE_OF_DATA_FRAMES=%s ! updated by xds_tools.py" % newTemplate
+            xds[oldTemplateIndex] = newTemplate
+            print("New name template is %s" % newTemplate)
+
+        # change the data range
+        if UPDATE_DATARANGE in option:
+            print("Updating data range")
+            ranges = option.split('=')[1]
+            # extract the new ranges
+            lower = int(ranges.split(',')[0])
+            upper = int(ranges.split(',')[1])
+            oldRangeIndex = get_xds_index(xds, "DATA_RANGE")
+            print("Old data range is %s" % xds[oldRangeIndex].split('=')[1])
+            newRange = "DATA_RANGE= %s %s ! updated by xds_tools.py" % (lower, upper)
+            xds[oldRangeIndex] = newRange
+            print("New data range is %s %s" % (lower, upper))
+
+        # change the data range
+        if UPDATE_DATARANGE in option:
+            print("Updating data range")
+            ranges = option.split('=')[1]
+            # extract the new ranges
+            lower = int(ranges.split(',')[0])
+            upper = int(ranges.split(',')[1])
+            oldRangeIndex = get_xds_index(xds, "DATA_RANGE")
+            print("Old data range is %s" % xds[oldRangeIndex].split('=')[1])
+            newRange = "DATA_RANGE= %s %s ! updated by xds_tools.py" % (lower, upper)
+            xds[oldRangeIndex] = newRange
+            print("New data range is %s %s" % (lower, upper))
+
+        # change the data range
+        if UPDATE_SPOTRANGE in option:
+            print("Updating spot range")
+            ranges = option.split('=')[1]
+            # extract the new ranges
+            lower = int(ranges.split(',')[0])
+            upper = int(ranges.split(',')[1])
+            oldRangeIndex = get_xds_index(xds, "SPOT_RANGE")
+            print("Old spot range is %s" % xds[oldRangeIndex].split('=')[1])
+            newRange = "SPOT_RANGE= %s %s ! updated by xds_tools.py" % (lower, upper)
+            xds[oldRangeIndex] = newRange
+            print("New spot range is %s %s" % (lower, upper))
+
+        # change the data range
+        if UPDATE_BGRANGE in option:
+            print("Updating background range")
+            ranges = option.split('=')[1]
+            # extract the new ranges
+            lower = int(ranges.split(',')[0])
+            upper = int(ranges.split(',')[1])
+            oldRangeIndex = get_xds_index(xds, "BACKGROUND_RANGE")
+            print("Old data range is %s" % xds[oldRangeIndex].split('=')[1])
+            newRange = "BACKGROUND_RANGE= %s %s ! updated by xds_tools.py" % (lower, upper)
+            xds[oldRangeIndex] = newRange
+            print("New background range is %s %s" % (lower, upper))
     # wirte the new XDS file
     print("Writing new XDS.INP ...")
     os.remove(XDSPath)
@@ -155,3 +216,26 @@ def XDS_update(pathToXdsFiles, updateOptions):
     for line in xds:
         XDSFile.write("%s\n" % line)
     print("Done!")
+
+
+def get_xds_index(xds, entry):
+    """Read out the zero based line number of an entry in XDS.INP.
+    xds ... array[string] the xds input file, each entry in the array represents a line
+    entry ... string should be found in the xds input file
+    returns int index in the xds array which contains the entry, returns None if not found
+    """
+    index = None
+    for i in range(len(xds)):
+        if entry in xds[i]:
+            index = i
+            break # index is found, abort loop
+    return index
+
+
+def copy_xds_template(pathToXds, pathToDestination):
+    """Copies a xds template input file to a new location.
+    pathToXds ... string path to flder which contains XDS.INP
+    pathToDestination ... string path were the new copy should be placed
+    """
+    shutil.copy(os.path.join(pathToXds, "XDS.INP"), os.path.join(pathToDestination, "XDS.INP"))
+    # I'm not exactly shure why I need the function

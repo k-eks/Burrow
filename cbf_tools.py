@@ -247,3 +247,23 @@ def folder_walker_find_and_rename_zero_frame(pathToRoot, searchSequence, replace
         print("Current folder is %s" % folder)
         find_and_rename_zero_frame(folder, searchSequence, replaceSequence)
     print("Done!")
+
+
+def split_revolutions(pathToFrames, nameTempalte):
+    """Creates subfolders for each revolution and moves the corresponding frames.
+    pathToFrames ... string path where to look for the frames
+    nameTempalte ... string template string from which the frame names are generated
+    """
+    setSize, revolutions = get_set_revolution_size_dataset(pathToFrames)
+    print("Starting moving...")
+    for i in range(revolutions):
+        subPath = os.path.join(pathToFrames, "rev%s" %(i + 1))
+        os.makedirs(subPath)
+        print("\nCreated %s" % subPath)
+        print("Moving revolution %s of %s\n" % (i + 1, revolutions))
+        for j in range(setSize):
+            # setup copy path and change to 1-based counting
+            source = os.path.join(pathToFrames, nameTempalte % (i + 1, j + 1))
+            destination = os.path.join(subPath, nameTempalte % (i + 1, j + 1))
+            shutil.move(source, destination)
+            print("Moved %s" % os.path.basename(source), end='\r')
