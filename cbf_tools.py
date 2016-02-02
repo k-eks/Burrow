@@ -260,11 +260,11 @@ def split_revolutions(pathToFrames, nameTempalte):
     """
     setSize, revolutions = get_set_revolution_size_dataset(pathToFrames)
     print("Starting moving...")
-    for i in range(revolutions - 1):
+    for i in range(revolutions):
         subPath = os.path.join(pathToFrames, "rev%s" %(i + 1))
         os.makedirs(subPath)
         print("\nCreated %s" % subPath)
-        print("Moving revolution %s of %s\n" % (i + 1, revolutions))
+        print("Moving revolution %s of %s" % (i + 1, revolutions))
         for j in range(setSize - 1):
             # setup copy path and change to 1-based counting
             source = os.path.join(pathToFrames, nameTempalte % (i + 1, j + 1))
