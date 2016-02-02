@@ -237,5 +237,5 @@ def copy_xds_template(pathToXds, pathToDestination):
     pathToXds ... string path to the xds file, file name including, will be renamed to XDS.INP.
     pathToDestination ... string path were the new copy should be placed
     """
-    shutil.copy(pathToXds), os.path.join(pathToDestination, "XDS.INP"))
+    shutil.copy(pathToXds, os.path.join(pathToDestination, "XDS.INP"))
     # I'm not exactly sure why I need the function
