@@ -12,6 +12,8 @@ import h5py
 import glob
 import math
 
+from ast import literal_eval
+
 # some properties
 CHUNK_SEQ = "sequential frame chunking"
 CHUNK_SKI = "skipping frame chunking"
@@ -73,7 +75,9 @@ def get_skiping_chunk(pathToFrames, nameTemplate, frameRange, chunkStart, chunkS
 
 
 def get_percentile(chunk, frameShape, percentile):
-    """Gets a percentile in z direction of a given data chunk."""
+    """Gets a percentile in z direction of a given data chunk.
+    chunk ... numpy.array2d(int)
+    """
     bg = np.zeros((frameShape[0], frameShape[1]), dtype=np.int32)
     for x in range(frameShape[0]):
         for y in range(frameShape[1]):
@@ -121,6 +125,8 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     outputName ... string name of the finished background frame, allows percent substituiton
     outputModifiers ... tuple(string) these modfieres are used to susbtitute outputName
     """
+    if type(outputModifiers) == tuple: # to read them as a tuple if neccessacry
+        outputModifiers = literal_eval(outputModifiers)
     fileNames = []
     for i in range(frameRange):
         fileNames.append(pathToFrames + (nameTemplate % (i + 1)))
