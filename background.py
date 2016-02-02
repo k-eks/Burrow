@@ -108,7 +108,7 @@ def generate_chunked_background_percentile(pathToFrames, pathToSubtracted, nameT
 
 
 def generate_subframe_background_percentile(pathToFrames, pathToBackground, nameTemplate,
-                                            frameRange, subsize, percentile, nameIdentifier==):
+                                            frameRange, subsize, percentile, nameIdentifier=""):
     """Creates a background by only reading in parts of frames and puzzeling these parts together.
     pathToFrames ... string location of the folder which contains the frames
     nameTemplate ... string format of the frame names
