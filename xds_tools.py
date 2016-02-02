@@ -238,4 +238,4 @@ def copy_xds_template(pathToXds, pathToDestination):
     pathToDestination ... string path were the new copy should be placed
     """
     shutil.copy(pathToXds), os.path.join(pathToDestination, "XDS.INP"))
-    # I'm not exactly shure why I need the function
+    # I'm not exactly sure why I need the function

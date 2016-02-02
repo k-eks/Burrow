@@ -1,7 +1,8 @@
+
+from __future__ import print_function # python 2.7 compatibility
 import sys
 sys.path.append("/cluster/home/hoferg/python/lib64/python2.7/site-packages")
 sys.path.append("/cluster/home/hoferg/python/lib64/python3.3/site-packages")
-from __future__ import print_function # python 2.7 compatibility
 
 import cmd, io, os.path, os
 import fancy_output as out

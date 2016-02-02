@@ -20,11 +20,13 @@ def get_flux(frame):
     returns int the flux rate
     """
     flux = -1
+    headerData = frame.header['_array_data.header_contents']
     # header is a dict object, the flux is located under the given key
-    if "Flux" in header:
+    if "Flux" in headerData:
         # get the flux by substring filtering
-        flux = header[header.index("Flux") + 5 : header.index(" counts", header.index("Flux"))]
+        flux = headerData[headerData.index("Flux") + 5 : headerData.index(" counts", headerData.index("Flux"))]
     else:
+        # this would be a very serious problem
         raise AttributeError("Flux not found in frame %s!" % frame.filename)
 
     return int(flux)
@@ -35,7 +37,7 @@ def average_flux(pathToFrames):
     flux = 0
     for file in glob.glob(pathToFrames + "/*.cbf"):
         frame = fabio.open(file)
-        flux += get_flux(fabio)
+        flux += get_flux(frame)
         del frame
         count += 1 # counts the number of frames
     return int(flux / count) # averaging
