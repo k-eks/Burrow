@@ -108,11 +108,18 @@ def generate_chunked_background_percentile(pathToFrames, pathToSubtracted, nameT
 
 
 def generate_subframe_background_percentile(pathToFrames, pathToBackground, nameTemplate,
-                                            frameRange, subsize, percentile, nameIdentifier=""):
+                                            frameRange, subsize, percentile, outputName,
+                                            outputModifiers=()):
     """Creates a background by only reading in parts of frames and puzzeling these parts together.
     pathToFrames ... string location of the folder which contains the frames
+    pathToBackground ... string location where the background frame should be placed
     nameTemplate ... string format of the frame names
     frameRange ... int maximum number of frames over which to run the algorithm
+    subsize ... int number of pixels in x and y directions to determine the subframe size
+                this is used to save memory
+    percentile ... float the percentile of the frames which should be considered as background
+    outputName ... string name of the finished background frame, allows percent substituiton
+    outputModifiers ... tuple(string) these modfieres are used to susbtitute outputName
     """
     fileNames = []
     for i in range(frameRange):
@@ -149,7 +156,7 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
                suby * subsize : suby * subsize + height] = get_percentile(subFrame, subFrame.shape, percentile)
 
     templateFrame.data = bg
-    templateFrame.write(os.path.join(pathToBackground, "bg_subframe_p%s%s.cbf" % (percentile, nameIdentifier)))
+    templateFrame.write(os.path.join(pathToBackground, outputName % outputModifiers))
 
 
 def generate_bg_chunked_master(pathToBgFrames, templateFrame, frameRange, percentile, mean=False):
