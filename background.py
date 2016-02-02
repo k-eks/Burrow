@@ -149,7 +149,8 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
                suby * subsize : suby * subsize + height] = get_percentile(subFrame, subFrame.shape, percentile)
 
     templateFrame.data = bg
-    templateFrame.write(os.path.join(pathToBackground, "bg_subframe_p%s%s.cbf" % (percentile,nameIdentifier))
+    fileName = "bg_subframe_p%s%s.cbf" % (percentile, nameIdentifier)
+    templateFrame.write(os.path.join(pathToBackground, fileName)
 
 
 def generate_bg_chunked_master(pathToBgFrames, templateFrame, frameRange, percentile, mean=False):
