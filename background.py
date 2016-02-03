@@ -12,7 +12,6 @@ import h5py
 import glob
 import math
 
-from ast import literal_eval
 
 # some properties
 CHUNK_SEQ = "sequential frame chunking"
@@ -123,10 +122,9 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
                 this is used to save memory
     percentile ... float the percentile of the frames which should be considered as background
     outputName ... string name of the finished background frame, allows percent substituiton
-    outputModifiers ... tuple(string) these modfieres are used to susbtitute outputName
+    outputModifiers ... string semicolon seperated string list, these modfieres are used to susbtitute outputName
     """
-    if type(outputModifiers) == tuple: # to read them as a tuple if neccessacry
-        outputModifiers = literal_eval(outputModifiers)
+    outputModifiers = tuple(outputModifiers.split(';'))
     fileNames = []
     for i in range(frameRange):
         fileNames.append(pathToFrames + (nameTemplate % (i + 1)))
