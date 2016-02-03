@@ -9,6 +9,8 @@ import os.path
 import glob
 import time
 import fabio
+import numpy as np
+from matplotlib import pyplot
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
@@ -48,10 +50,12 @@ def cbf_to_png(pathToFrames, addFileName=True):
     font = ImageFont.truetype("/Library/Fonts/Arial Unicode.ttf",25)
     for fileName in glob.glob(os.path.join(pathToFrames, "*.cbf")):
         frame = fabio.open(fileName)
-        image = Image.fromarray(f.data, 'RGB')
+        data = frame.data
+        data = data / np.max(data)
+        image = Image.fromarray(np.uint8(pyplot.cm.gray_r(data)*255))
         fileName += ".png"
         if addFileName:
-            draw = ImageDraw.Draw(i)
-            draw.text((0, 0), filename, (255,0,0), font=font)
+            draw = ImageDraw.Draw(image)
+            draw.text((0, 0), fileName, (255,0,0), font=font)
         image.save(fileName)
         print("Written %s" % fileName)
