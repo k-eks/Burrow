@@ -122,9 +122,9 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
                 this is used to save memory
     percentile ... float the percentile of the frames which should be considered as background
     outputName ... string name of the finished background frame, allows percent substituiton
-    outputModifiers ... string semicolon seperated string list, these modfieres are used to susbtitute outputName
+    outputModifiers ... string plus-sign seperated string list, these modfieres are used to susbtitute outputName
     """
-    outputModifiers = tuple(outputModifiers.split(';'))
+    outputModifiers = tuple(outputModifiers.split('+'))
     fileNames = []
     for i in range(frameRange):
         fileNames.append(pathToFrames + (nameTemplate % (i + 1)))
