@@ -8,6 +8,7 @@ import numpy as np
 import os.path
 import fabio
 import xds_tools
+import cbf_tools
 import h5py
 import glob
 import math
@@ -159,7 +160,14 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
             bg[subx * subsize : subx * subsize + width,
                suby * subsize : suby * subsize + height] = get_percentile(subFrame, subFrame.shape, percentile)
 
+    # create and write the flux monitor
+    fluxFileName = "fluxmonitor_" + outputName + ".csv"
+    flux = cbf_tools.average_flux(pathToFrames, pathToBackground, fluxFileName % outputModifiers)
+    # writing the background file
     templateFrame.data = bg
+    extension = outputName.split('.')[1]
+    # splicing the average flux into the file name
+    outputName = outputName.split('.')[0] + "_flux" + str(flux) + "." + extension
     templateFrame.write(os.path.join(pathToBackground, outputName % outputModifiers))
 
 

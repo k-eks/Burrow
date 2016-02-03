@@ -34,14 +34,31 @@ def get_flux(frame):
     return int(flux)
 
 
-def average_flux(pathToFrames):
+def average_flux(pathToFrames, outputPath, outputName, outputModifiers=()):
+    """Calculates the average flux of the frames in the current folder and monitors the change in flux.
+    pathToFrames ... string path to the folder which contains the frames
+    outputPath ... string location where the file should be dumped
+    outputName ... string name of the finished flux file, allows percent substituiton
+    outputModifiers ... string plus-sign seperated string list, these modfieres are used to susbtitute outputName
+    returns int averaged flux
+    """
     count = 0
     flux = 0
+    fluxChange = [] # for monitoring
+    print("Starting flux averaging")
     for file in glob.glob(pathToFrames + "/*.cbf"):
         frame = fabio.open(file)
-        flux += get_flux(frame)
+        currentFlux = get_flux(frame)
+        print("Working on %s, current flux is %s" % (os.path.basename(file), currentFlux), end='\r')
+        flux += currentFlux
         del frame
         count += 1 # counts the number of frames
+        fluxChange.append((count, currentFlux)) # create the monitor file
+    # dump the monitor file
+    outputPath = os.path.join(outputPath, outputName % outputModifiers)
+    np.savetxt(outputPath, np.asarray(fluxChange), delimiter=';')
+    print("\nSaved the flux monitor to %s" % outputPath)
+    print("Done, average flux is %s" % int(flux / count))
     return int(flux / count) # averaging
 
 
