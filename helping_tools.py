@@ -6,7 +6,12 @@ sys.path.append("/cluster/home/hoferg/python/lib64/python3.3/site-packages")
 
 import os
 import os.path
+import glob
 import time
+import fabio
+from PIL import Image
+from PIL import ImageFont
+from PIL import ImageDraw
 
 
 def find_named_folders(rootPath, namedFolder):
@@ -33,3 +38,20 @@ def timestamp():
     returns string the current time stamp in the format of YYMMDD-HHMMSS
     """
     return time.strftime("%y%m%d-%H%M%S")
+
+
+def cbf_to_png(pathToFrames, addFileName=True):
+    """Turns several cbf files in a folder into png's. Useful for printing!
+    pathToFrames ... string path where to look for the frames
+    addFileName ... bool wheter the file name should be printed onto the image or not
+    """
+    font = ImageFont.truetype("/Library/Fonts/Arial Unicode.ttf",25)
+    for fileName in glob.glob(os.path.join(pathToFrames, "*.cbf")):
+        frame = fabio.open(fileName)
+        image = Image.fromarray(f.data, 'RGB')
+        fileName += ".png"
+        if addFileName:
+            draw = ImageDraw.Draw(i)
+            draw.text((0, 0), filename, (255,0,0), font=font)
+        image.save(fileName)
+        print("Written %s" % fileName)
