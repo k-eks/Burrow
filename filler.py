@@ -1,3 +1,9 @@
+from __future__ import print_function # python 2.7 compatibility
+
+import sys
+sys.path.append("/cluster/home/hoferg/python/lib64/python2.7/site-packages")
+sys.path.append("/cluster/home/hoferg/python/lib64/python3.3/site-packages")
+
 import h5py
 import numpy as np
 import xds_tools
@@ -6,7 +12,6 @@ import math
 import glob
 import fabio
 import os
-import sys
 
 def filler_meerkat_average(clearedFile, originalFile):
     """Turns untrusted voxels and nans to zero and fills punched Braggs."""
