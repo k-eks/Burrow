@@ -9,11 +9,27 @@ import os.path
 import glob
 import time
 import fabio
+import warnings
 import numpy as np
 from matplotlib import pyplot
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
+
+
+def deprecated(func):
+    """This is a decorator which can be used to mark functions as deprecated. It will result in a warning being emitted when the function is used.
+    taken from: https://wiki.python.org/moin/PythonDecoratorLibrary#CA-03ade855b8be998a2a4befd0f5f810b63abcfd7d_3
+    """
+    def new_func(*args, **kwargs):
+        warnings.warn("Call to deprecated function {}.".format(func.__name__),
+                      category=DeprecationWarning)
+        print("Call to deprecated function: {}.".format(func.__name__))
+        return func(*args, **kwargs)
+    new_func.__name__ = func.__name__
+    new_func.__doc__ = func.__doc__
+    new_func.__dict__.update(func.__dict__)
+    return new_func
 
 
 def find_named_folders(rootPath, namedFolder):
