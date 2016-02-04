@@ -9,6 +9,7 @@ import os.path
 import fabio
 import xds_tools
 import cbf_tools
+import helping_tools
 import h5py
 import glob
 import math
@@ -19,7 +20,7 @@ CHUNK_SEQ = "sequential frame chunking"
 CHUNK_SKI = "skipping frame chunking"
 CHUNK_RAN = "random frame chunking"
 
-
+@helping_tools.deprecated
 def get_sequential_chunk(pathToFrames, nameTemplate, chunkStart, chunkSize):
     """Reads a defined number of frames in a squential manner into an array.
     pathToFrames ... string location of the folder which contains the frames
@@ -47,6 +48,7 @@ def get_sequential_chunk(pathToFrames, nameTemplate, chunkStart, chunkSize):
     return stack
 
 
+@helping_tools.deprecated
 def get_skiping_chunk(pathToFrames, nameTemplate, frameRange, chunkStart, chunkSize):
     """Reads only every other frame and stacks their data to a chunk.
     pathToFrames ... string location of the folder which contains the frames
@@ -76,7 +78,9 @@ def get_skiping_chunk(pathToFrames, nameTemplate, frameRange, chunkStart, chunkS
 
 def get_percentile(chunk, frameShape, percentile):
     """Gets a percentile in z direction of a given data chunk.
-    chunk ... numpy.array2d(int)
+    chunk ... numpy.array3d(int) piece of data which contains the frame data of several frames, stacked in the third array dimension
+    frameShape ... tuple(int, int) x and y dimesions of the frame
+    percentile ... numeric percentile which should be calculated, range is from 0 to 100
     """
     bg = np.zeros((frameShape[0], frameShape[1]), dtype=np.int32)
     for x in range(frameShape[0]):
@@ -89,13 +93,19 @@ def get_percentile(chunk, frameShape, percentile):
     return bg
 
 
-def generate_chunked_background_percentile(pathToFrames, pathToSubtracted, nameTemplate,
+@helping_tools.deprecated
+def generate_chunked_background_percentile(pathToFrames, pathToJunks, nameTemplate,
                                            frameRange, templateFrame, chunkSize,
                                            percentile, chunking=CHUNK_SKI):
     """Chunks frames and creates  partial background frames for these chunks.
     pathToFrames ... string location of the folder which contains the frames
+    pathToJunks ... string location where the individual junks should be stored
     nameTemplate ... string format of the frame names
     frameRange ... int maximum number of frames over which to run the algorithm
+    templateFrame ... fabio.frame a frame from which the parameters of the measured frames can be deduced
+    chunkSize ... int number of frames which should be read
+    percentile ... numeric percentile which should be calculated, range is from 0 to 100
+    chunking ... background.CONSTANT method which should be used to generate the chunks
     """
     for i in range(int(frameRange / chunkSize)):
         print("Using chunk " + str(i + 1) + " of " + str(int(frameRange / chunkSize)))
@@ -106,7 +116,7 @@ def generate_chunked_background_percentile(pathToFrames, pathToSubtracted, nameT
             chunk = get_sequential_chunk(pathToFrames, nameTemplate, i * chunkSize + 1, chunkSize)
         bg = templateFrame # just as a prototype
         bg.data = get_percentile(chunk, templateFrame.data.shape, percentile)
-        templateFrame.write(pathToSubtracted + "bg" + str(i) + ".cbf")
+        templateFrame.write(pathToJunks + "bg" + str(i) + ".cbf")
         del chunk, bg # cleaning memory
     print("\nFinished processing of all chunks with the method of \"%s\"!" % chunking)
 
@@ -121,7 +131,7 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     frameRange ... int maximum number of frames over which to run the algorithm
     subsize ... int number of pixels in x and y directions to determine the subframe size
                 this is used to save memory
-    percentile ... float the percentile of the frames which should be considered as background
+    percentile ... numeric the percentile of the frames which should be considered as background
     outputName ... string name of the finished background frame, allows percent substituiton
     outputModifiers ... string plus-sign seperated string list, these modfieres are used to susbtitute outputName
     """
@@ -171,10 +181,14 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     templateFrame.write(os.path.join(pathToBackground, outputName % outputModifiers))
 
 
+@helping_tools.deprecated
 def generate_bg_chunked_master(pathToBgFrames, templateFrame, frameRange, percentile, mean=False):
     """Turns all generated background chunks into a single background frame.
     pathToBgFrames ... string location of the folder which contains the partial frame backgrounds
+    templateFrame ... fabio.frame a frame from which the parameters of the measured frames can be deduced
     frameRange ... int maximum number of frames over which to run the algorithm
+    percentile ... numeric percentile which should be calculated, range is from 0 to 100
+    mean ... bool generates two additional background frames based on the mean and median
     """
     bg = np.zeros((templateFrame.data.shape[0], templateFrame.data.shape[1]))
     chunk = get_sequential_chunk(pathToBgFrames, "bg%i.cbf", 0, frameRange)
