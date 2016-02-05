@@ -24,7 +24,7 @@ def deprecated(func):
     def new_func(*args, **kwargs):
         warnings.warn("Call to deprecated function {}.".format(func.__name__),
                       category=DeprecationWarning)
-        print("Call to deprecated function: {}.".format(func.__name__))
+        print("\nCall to deprecated function: {}.\n".format(func.__name__))
         return func(*args, **kwargs)
     new_func.__name__ = func.__name__
     new_func.__doc__ = func.__doc__

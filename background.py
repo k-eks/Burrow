@@ -36,7 +36,7 @@ def get_sequential_chunk(pathToFrames, nameTemplate, chunkStart, chunkSize):
 
     # generating the base data
     framePrototype = fabio.open(fileNames[0])
-    stack = np.zeros((framePrototype.data.shape[0], framePrototype.data.shape[1], chunkSize), dtype=np.int32)
+    stack = np.zeros((framePrototype.data.shape[0], framePrototype.data.shape[1], chunkSize))
 
     # start stacking
     for i in range(chunkSize):
@@ -64,7 +64,7 @@ def get_skiping_chunk(pathToFrames, nameTemplate, frameRange, chunkStart, chunkS
 
     # generating the base data
     framePrototype = fabio.open(fileNames[0])
-    stack = np.zeros((framePrototype.data.shape[0], framePrototype.data.shape[1], chunkSize), dtype=np.int32)
+    stack = np.zeros((framePrototype.data.shape[0], framePrototype.data.shape[1], chunkSize))
 
     # start stacking
     for i in range(chunkSize):
@@ -82,7 +82,7 @@ def get_percentile(chunk, frameShape, percentile):
     frameShape ... tuple(int, int) x and y dimesions of the frame
     percentile ... numeric percentile which should be calculated, range is from 0 to 100
     """
-    bg = np.zeros((frameShape[0], frameShape[1]), dtype=np.int32)
+    bg = np.zeros((frameShape[0], frameShape[1]))
     for x in range(frameShape[0]):
         for y in range(frameShape[1]):
             intensity = chunk[x,y,:]
@@ -123,7 +123,7 @@ def generate_chunked_background_percentile(pathToFrames, pathToJunks, nameTempla
 
 def generate_subframe_background_percentile(pathToFrames, pathToBackground, nameTemplate,
                                             frameRange, subsize, percentile, outputName,
-                                            outputModifiers=()):
+                                            outputModifiers=None):
     """Creates a background by only reading in parts of frames and puzzeling these parts together.
     pathToFrames ... string location of the folder which contains the frames
     pathToBackground ... string location where the background frame should be placed
@@ -135,13 +135,16 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     outputName ... string name of the finished background frame, allows percent substituiton
     outputModifiers ... string plus-sign seperated string list, these modfieres are used to susbtitute outputName
     """
-    outputModifiers = tuple(outputModifiers.split('+'))
+    if outputModifiers != None:
+        outputModifiers = tuple(outputModifiers.split('+'))
+    else:
+        outputModifiers = ()
     fileNames = []
     for i in range(frameRange):
         fileNames.append(pathToFrames + (nameTemplate % (i + 1)))
 
     templateFrame = fabio.open(fileNames[0]) # just a prototype
-    bg = np.zeros((templateFrame.data.shape[0], templateFrame.data.shape[1]), dtype=np.int32)
+    bg = np.zeros((templateFrame.data.shape[0], templateFrame.data.shape[1]))
 
     # determination of how many tiles are necessary for the subdivition of the frames
     tilesx = int(templateFrame.data.shape[0] / subsize) + 1
@@ -175,10 +178,13 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     flux = cbf_tools.average_flux(pathToFrames, pathToBackground, fluxFileName % outputModifiers)
     # writing the background file
     templateFrame.data = bg
-    extension = outputName.split('.')[1]
-    # splicing the average flux into the file name
-    outputName = outputName.split('.')[0] + "_flux" + str(flux) + "." + extension
-    templateFrame.write(os.path.join(pathToBackground, outputName % outputModifiers))
+    fileName, fileExtension = os.path.splitext(outputName)
+    # splicing the average flux into the file name and prepare the extension
+    outputName = fileName + "_flux" + str(flux) + "."
+    # write the cbf file
+    templateFrame.write(os.path.join(pathToBackground, outputName + "cbf" % outputModifiers))
+    # write the h5 file
+    cbf_tools.frame_to_h5(templateFrame, pathToBackground, outputName + "h5", outputModifiers)
 
 
 @helping_tools.deprecated
@@ -213,6 +219,34 @@ def generate_bg_chunked_master(pathToBgFrames, templateFrame, frameRange, percen
         print("\nCreated ceiled background!")
 
 
+def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundData,
+                               backgroundMixture, bgName, maskFrame):
+    print("Generating hybrid background")
+    bg = np.zeros(backgroundData[0].shape)
+    for i in range(len(backgroundMixture)):
+        bg += (backgroundData[0] * backgroundMixture[0])
+    # save the used background
+    frame = fabio.open(maskFrame) # needs to be replace with a sample frame
+    frame.data = bg
+    frame.save(os.path.join(pathToSubtracted, bgName))
+    cbf_tools.frame_to_h5(frame, pathToSubtracted, bgName)
+    ("Background generated and saved to %s" % pathToSubtracted)
+    maskUntrusted, maskDefective, maskHot = cbf_tools.generate_all_unwanted_pixel(maskFrame, 1000000)
+    """
+    print("starting subtracting\n")
+    for fileName in glob.glob(os.path.join(pathToFrames, "*.cbf")):
+        frame = fabio.open(fileName)
+        frame.data -= bg # here is the actual backround subtraction
+        frame.data = cbf_tools.restore_pixel_mask(frame, maskUntrusted, maskDefective, maskHot)
+        fileName = os.path.basename(fileName) # preparing writing to new location
+        frame.save(os.path.join(pathToSubtracted, fileName))
+        print("Background subtracted from  %s" % fileName, end='\r')
+        del frame # cleaning up memory
+    """
+    print("\nDone!")
+
+
+# this function is inaptly named
 def subtract_background(bgFrame, hotFrame, pathToFrames, pathToSubtracted, hotPixelStart,
                         maskingOption, pathToBKGPIX):
     """Subtracts the background.
