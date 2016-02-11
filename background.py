@@ -219,30 +219,33 @@ def generate_bg_chunked_master(pathToBgFrames, templateFrame, frameRange, percen
         print("\nCreated ceiled background!")
 
 
-def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundData,
-                               backgroundMixture, bgName, maskFrame):
-    print("Generating hybrid background")
-    bg = np.zeros(backgroundData[0].shape)
-    for i in range(len(backgroundMixture)):
-        bg += (backgroundData[0] * backgroundMixture[0])
-    # save the used background
-    frame = fabio.open(maskFrame) # needs to be replace with a sample frame
-    frame.data = bg
-    frame.save(os.path.join(pathToSubtracted, bgName))
-    cbf_tools.frame_to_h5(frame, pathToSubtracted, bgName)
-    ("Background generated and saved to %s" % pathToSubtracted)
+def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFramesPath,
+                               backgroundFrameNames, backgroundMixture, bgName, maskFrame):
+    # read the flux for the bg files
+    bgFluxes = []
+    bgData = []
+    bgCount = len(backgroundFrameNames)
+    for fileName in backgroundFrameNames:
+        bgFluxes.append(get_flux_from_file_name(os.path.join(backgroundFramesPath, fileName)))
+        bgData.append(cbf_tools.h5_to_numpy(backgroundFramesPath, fileName, (,)))
+
     maskUntrusted, maskDefective, maskHot = cbf_tools.generate_all_unwanted_pixel(maskFrame, 1000000)
-    """
     print("starting subtracting\n")
     for fileName in glob.glob(os.path.join(pathToFrames, "*.cbf")):
         frame = fabio.open(fileName)
-        frame.data -= bg # here is the actual backround subtraction
+        frameFlux = cbf_tools.get_flux(frame)
+        # mix the background frame
+        bgAll = np.zeros(frame.data.shape)
+        for i in range(bgCount):
+            scale = bgFluxes[i] / frameFlux
+            bgAll += bgData[i] / scale * backgroundMixture[i]
+        frame.data -= bgAll # here is the actual backround subtraction
+        frame.data = frame.data.astype(np.int32)
         frame.data = cbf_tools.restore_pixel_mask(frame, maskUntrusted, maskDefective, maskHot)
         fileName = os.path.basename(fileName) # preparing writing to new location
-        frame.save(os.path.join(pathToSubtracted, fileName))
+        frame.save(os.path.join(pathToSubtracted, bg_name + fileName))
         print("Background subtracted from  %s" % fileName, end='\r')
         del frame # cleaning up memory
-    """
     print("\nDone!")
 
 
@@ -279,3 +282,14 @@ def subtract_background(bgFrame, hotFrame, pathToFrames, pathToSubtracted, hotPi
         frame.write(pathToSubtracted + os.path.basename(imageFile))
         del frame # freeing some memory, otherwise memory would reach tera bytes at this point
     print("\nBackground subtraction complete!")
+
+
+def get_flux_from_file_name(fileName):
+    """Reads out the flux written in the file path of the h5 background files.
+    fileName ... string name of the the file from which the flux should be extracted, path optional
+    returns int flux of the file
+    """
+    fileName = os.path.basename(fileName)
+    # flux is encoded between the last underscore and the first dot
+    flux = fileName.split('_')[-1].split['.']
+    return int(flux)
