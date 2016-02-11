@@ -227,7 +227,7 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFramesP
     bgCount = len(backgroundFrameNames)
     for fileName in backgroundFrameNames:
         bgFluxes.append(get_flux_from_file_name(os.path.join(backgroundFramesPath, fileName)))
-        bgData.append(cbf_tools.h5_to_numpy(backgroundFramesPath, fileName, (,)))
+        bgData.append(cbf_tools.h5_to_numpy(backgroundFramesPath, fileName, ()))
 
     maskUntrusted, maskDefective, maskHot = cbf_tools.generate_all_unwanted_pixel(maskFrame, 1000000)
     print("starting subtracting\n")
@@ -250,6 +250,7 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFramesP
 
 
 # this function is inaptly named
+@helping_tools.deprecated
 def subtract_background(bgFrame, hotFrame, pathToFrames, pathToSubtracted, hotPixelStart,
                         maskingOption, pathToBKGPIX):
     """Subtracts the background.
