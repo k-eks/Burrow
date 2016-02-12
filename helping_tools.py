@@ -84,9 +84,9 @@ def parse_substition_modifiers(modifier):
     """
     if type(modifier) is not tuple:
         if modifier is None:
-            outputModifiers = ()
-        elif len(outputModifiers) == 0:
-            outputModifiers = ()
+            modifier = ()
+        elif len(modifier) == 0:
+            modifier = ()
     else:
-        outputModifiers = tuple(outputModifiers.split('+'))
+        modifier = tuple(modifier.split('+'))
     return modifer
