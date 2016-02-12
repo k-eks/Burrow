@@ -199,6 +199,7 @@ def rename_frames(pathToFrames, newName):
     newName ... string the new idetifier for the frame
     """
     print("starting renaming\n")
+    newName += "_"
     for fileName in glob.glob(os.path.join(pathToFrames, "*.cbf")):
         # make sure that no underscores in folders are taken as a starting point
         fileName = os.path.basename(fileName)
@@ -348,7 +349,7 @@ def generate_all_unwanted_pixel(bgFrame, hotStart):
                 untrustedPixel.append(x * bgFrame.data.shape[1] + y)
             elif bgFrame.data[x, y] >= hotStart: # intensity at which hot pixel start
                 hotPixel.append(x * bgFrame.data.shape[1] + y)
-    return np.asarray(defectivePixel), np.asarray(untrustedPixel), np.asarray(hotPixel)
+    return np.asarray(defectivePixel).astype(int32), np.asarray(untrustedPixel).astype(int32), np.asarray(hotPixel).astype(int32)
 
 
 def read_all_unwanted_pixel(pathToBKGPIX, frameTemplate):
