@@ -175,7 +175,7 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     fluxFileName = "fluxmonitor_" + outputName + ".csv"
     flux = cbf_tools.average_flux(pathToFrames, pathToBackground, fluxFileName % outputModifiers)
     # writing the background file
-    templateFrame.data = bg
+    templateFrame.data = bg.astype(np.int32)
     fileName, fileExtension = os.path.splitext(outputName)
     # splicing the average flux into the file name and prepare the extension
     outputName = fileName + "_flux" + str(flux) + ".cbf"
@@ -290,5 +290,5 @@ def get_flux_from_file_name(fileName):
     """
     fileName = os.path.basename(fileName)
     # flux is encoded between the last underscore and the first dot
-    flux = fileName.split('_')[-1].split['.']
+    flux = fileName.split('_')[-1].split('.')[0]
     return int(flux)
