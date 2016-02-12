@@ -46,7 +46,7 @@ def get_flux(frame):
     return int(flux)
 
 
-def average_flux(pathToFrames, outputPath, outputName, outputModifiers=()):
+def average_flux(pathToFrames, outputPath, outputName, outputModifiers=""):
     """Calculates the average flux of the frames in the current folder and monitors the change in flux.
     pathToFrames ... string path to the folder which contains the frames
     outputPath ... string location where the file should be dumped
