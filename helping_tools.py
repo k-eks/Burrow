@@ -89,4 +89,4 @@ def parse_substition_modifiers(modifier):
             modifier = ()
     else:
         modifier = tuple(modifier.split('+'))
-    return modifer
+    return modifier
