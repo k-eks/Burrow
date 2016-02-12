@@ -137,7 +137,6 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     """
     # parse the modifiers
     outputModifiers = helping_tools.parse_substition_modifiers(outputModifiers)
-    frameRange = 1
     fileNames = []
     for i in range(frameRange):
         fileNames.append(pathToFrames + (nameTemplate % (i + 1)))
@@ -183,7 +182,7 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     # write the cbf file
     templateFrame.write(os.path.join(pathToBackground, outputName % outputModifiers))
     # write the h5 file
-    cbf_tools.frame_to_h5(templateFrame, pathToBackground, outputName + "h5", outputModifiers)
+    cbf_tools.frame_to_h5(templateFrame, pathToBackground, outputName + ".h5", outputModifiers)
 
 
 @helping_tools.deprecated
