@@ -75,3 +75,18 @@ def cbf_to_png(pathToFrames, addFileName=True):
             draw.text((0, 0), fileName, (255,0,0), font=font)
         image.save(fileName)
         print("Written %s" % fileName)
+
+
+def parse_substition_modifiers(modifier):
+    """Turns a modifier variable into a suitable tuple for later useage.
+    modifier ... ducktype variable which needs type casting and decoding
+    returns ... tuple which can be used in percent substitution
+    """
+    if type(modifier) is not tuple:
+        if modifier is None:
+            outputModifiers = ()
+        elif len(outputModifiers) == 0:
+            outputModifiers = ()
+    else:
+        outputModifiers = tuple(outputModifiers.split('+'))
+    return modifer

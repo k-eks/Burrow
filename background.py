@@ -135,10 +135,8 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     outputName ... string name of the finished background frame, allows percent substituiton
     outputModifiers ... string plus-sign seperated string list, these modfieres are used to susbtitute outputName
     """
-    if outputModifiers != None:
-        outputModifiers = tuple(outputModifiers.split('+'))
-    else:
-        outputModifiers = ()
+    # parse the modifiers
+    outputModifiers = helping_tools.parse_substition_modifiers(outputModifiers)
     fileNames = []
     for i in range(frameRange):
         fileNames.append(pathToFrames + (nameTemplate % (i + 1)))

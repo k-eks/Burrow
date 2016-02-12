@@ -55,10 +55,7 @@ def average_flux(pathToFrames, outputPath, outputName, outputModifiers=""):
     returns int averaged flux
     """
     # decode the output modifiers
-    if len(outputModifiers) == 0:
-        outputModifiers = ()
-    else:
-        outputModifiers = tuple(outputModifiers.split('+'))
+    outputModifiers = helping_tools.parse_substition_modifiers(outputModifiers)
     # setup start values
     count = 0
     flux = 0
@@ -309,10 +306,7 @@ def frame_to_h5(frame, outputPath, outputName, outputModifiers=""):
     outputModifiers ... string plus-sign seperated string list, these modfieres are used to susbtitute outputName
     """
     # decode the output modifiers
-    if len(outputModifiers) == 0:
-        outputModifiers = ()
-    else:
-        outputModifiers = tuple(outputModifiers.split('+'))
+    outputModifiers = helping_tools.parse_substition_modifiers(outputModifiers)
     outputPath = os.path.join(outputPath, outputName % outputModifiers)
     h5 = h5py.File(outputPath, 'w')
     h5.create_dataset('frame', data=frame.data)
