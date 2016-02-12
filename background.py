@@ -137,7 +137,7 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     """
     # parse the modifiers
     outputModifiers = helping_tools.parse_substition_modifiers(outputModifiers)
-    print(modifiers)
+    print(outputModifiers)
     print(outputName)
     frameRange = 1
     fileNames = []
