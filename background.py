@@ -180,9 +180,9 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     templateFrame.data = bg
     fileName, fileExtension = os.path.splitext(outputName)
     # splicing the average flux into the file name and prepare the extension
-    outputName = fileName + "_flux" + str(flux) + "."
+    outputName = fileName + "_flux" + str(flux) + ".cbf"
     # write the cbf file
-    templateFrame.write(os.path.join(pathToBackground, outputName + "cbf" % outputModifiers))
+    templateFrame.write(os.path.join(pathToBackground, outputName % outputModifiers))
     # write the h5 file
     cbf_tools.frame_to_h5(templateFrame, pathToBackground, outputName + "h5", outputModifiers)
 
