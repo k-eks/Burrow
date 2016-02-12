@@ -178,7 +178,7 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     templateFrame.data = bg.astype(np.int32)
     fileName, fileExtension = os.path.splitext(outputName)
     # splicing the average flux into the file name and prepare the extension
-    outputName = fileName + "_flux" + str(flux) + ".cbf"
+    outputName = fileName + "_flux_" + str(flux) + ".cbf"
     # write the cbf file
     templateFrame.write(os.path.join(pathToBackground, outputName % outputModifiers))
     # write the h5 file
@@ -241,7 +241,7 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFramesP
         frame.data = frame.data.astype(np.int32)
         frame.data = cbf_tools.restore_pixel_mask(frame, maskUntrusted, maskDefective, maskHot)
         fileName = os.path.basename(fileName) # preparing writing to new location
-        frame.save(os.path.join(pathToSubtracted, bg_name + fileName))
+        frame.save(os.path.join(pathToSubtracted, bgName + fileName))
         print("Background subtracted from  %s" % fileName, end='\r')
         del frame # cleaning up memory
     print("\nDone!")
