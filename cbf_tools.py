@@ -59,6 +59,7 @@ def average_flux(pathToFrames, outputPath, outputName, outputModifiers=""):
         outputModifiers = ()
     else:
         outputModifiers = tuple(outputModifiers.split('+'))
+    # setup start values
     count = 0
     flux = 0
     fluxChange = [] # for monitoring
@@ -300,14 +301,18 @@ def split_revolutions(pathToFrames, nameTempalte):
             print("Moved %s" % os.path.basename(source), end='\r')
 
 
-def frame_to_h5(frame, outputPath, outputName, outputModifiers=()):
+def frame_to_h5(frame, outputPath, outputName, outputModifiers=""):
     """Turns a frame into a h5 file.
     frame ... fabio.frame frame which contains the data that should be saved as h5 file
     outputPath ... string location where the file should be dumped
     outputName ... string name of the finished h5 file, allows percent substituiton
     outputModifiers ... string plus-sign seperated string list, these modfieres are used to susbtitute outputName
     """
-    outputModifiers = tuple(outputModifiers.split('+'))
+    # decode the output modifiers
+    if len(outputModifiers) == 0:
+        outputModifiers = ()
+    else:
+        outputModifiers = tuple(outputModifiers.split('+'))
     outputPath = os.path.join(outputPath, outputName % outputModifiers)
     h5 = h5py.File(outputPath, 'w')
     h5.create_dataset('frame', data=frame.data)
