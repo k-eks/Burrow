@@ -349,7 +349,7 @@ def generate_all_unwanted_pixel(bgFrame, hotStart):
                 untrustedPixel.append(x * bgFrame.data.shape[1] + y)
             elif bgFrame.data[x, y] >= hotStart: # intensity at which hot pixel start
                 hotPixel.append(x * bgFrame.data.shape[1] + y)
-    return np.asarray(defectivePixel).astype(int32), np.asarray(untrustedPixel).astype(int32), np.asarray(hotPixel).astype(int32)
+    return np.asarray(defectivePixel).astype(np.int32), np.asarray(untrustedPixel).astype(np.int32), np.asarray(hotPixel).astype(np.int32)
 
 
 def read_all_unwanted_pixel(pathToBKGPIX, frameTemplate):
