@@ -54,7 +54,11 @@ def average_flux(pathToFrames, outputPath, outputName, outputModifiers=""):
     outputModifiers ... string plus-sign seperated string list, these modfieres are used to susbtitute outputName
     returns int averaged flux
     """
-    outputModifiers = tuple(outputModifiers.split('+'))
+    # decode the output modifiers
+    if len(outputModifiers) == 0:
+        outputModifiers = ()
+    else:
+        outputModifiers = tuple(outputModifiers.split('+'))
     count = 0
     flux = 0
     fluxChange = [] # for monitoring
