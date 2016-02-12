@@ -137,8 +137,6 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     """
     # parse the modifiers
     outputModifiers = helping_tools.parse_substition_modifiers(outputModifiers)
-    print(outputModifiers)
-    print(outputName)
     frameRange = 1
     fileNames = []
     for i in range(frameRange):
@@ -176,6 +174,10 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
 
     # create and write the flux monitor
     fluxFileName = "fluxmonitor_" + outputName + ".csv"
+    print(outputModifiers)
+    print(outputName)
+    fluxFileName = fluxFileName % outputModifiers
+    print(fluxFileName)
     flux = cbf_tools.average_flux(pathToFrames, pathToBackground, fluxFileName % outputModifiers)
     # writing the background file
     templateFrame.data = bg
