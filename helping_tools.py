@@ -18,7 +18,7 @@ from PIL import ImageDraw
 
 
 def deprecated(func):
-    """This is a decorator which can be used to mark functions as deprecated. It will result in a warning being emitted when the function is used.
+    """This is a decorator which is used to mark functions as deprecated. It will result in a warning being emitted when the function is used.
     taken from: https://wiki.python.org/moin/PythonDecoratorLibrary#CA-03ade855b8be998a2a4befd0f5f810b63abcfd7d_3
     """
     def new_func(*args, **kwargs):
@@ -90,3 +90,13 @@ def parse_substition_modifiers(modifier):
         else:
             modifier = tuple(modifier.split('+'))
     return modifier
+
+
+def check_folder(path):
+    """Tests if a folder exists and create folders if they do not exist.
+    path ... string file or folder path which should be tested
+    """
+    folder = os.path.dirname(path)
+    if not os.path.exists(path):
+        os.makedirs(path) # this also creates nonexistent middle folders
+        print("Created %s" % path)
