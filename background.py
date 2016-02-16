@@ -171,6 +171,7 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
             bg[subx * subsize : subx * subsize + width,
                suby * subsize : suby * subsize + height] = get_percentile(subFrame, subFrame.shape, percentile)
 
+    helping_tools.check_folder(pathToSubtracted)
     # create and write the flux monitor
     fluxFileName = "fluxmonitor_" + outputName + ".csv"
     flux = cbf_tools.average_flux(pathToFrames, pathToBackground, fluxFileName % outputModifiers)
@@ -219,7 +220,6 @@ def generate_bg_chunked_master(pathToBgFrames, templateFrame, frameRange, percen
 
 def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFramesPath,
                                backgroundFrameNames, backgroundMixture, bgName, maskFrame):
-    # read the flux for the bg files
     bgFluxes = []
     bgData = []
     bgCount = len(backgroundFrameNames)
@@ -227,6 +227,8 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFramesP
         bgFluxes.append(get_flux_from_file_name(os.path.join(backgroundFramesPath, fileName)))
         bgData.append(cbf_tools.h5_to_numpy(backgroundFramesPath, fileName, ()))
 
+    helping_tools.check_folder(pathToSubtracted)
+    print("Reading masks, please wait!")
     maskUntrusted, maskDefective, maskHot = cbf_tools.generate_all_unwanted_pixel(maskFrame, 1000000)
     print("starting subtracting\n")
     for fileName in glob.glob(os.path.join(pathToFrames, "*.cbf")):
@@ -239,10 +241,11 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFramesP
             bgAll += bgData[i] / scale * backgroundMixture[i]
         frame.data -= bgAll # here is the actual backround subtraction
         frame.data = frame.data.astype(np.int32)
+        frame.data += abs(np.min(frame.data)) # scaling to remove negative values
         frame.data = cbf_tools.restore_pixel_mask(frame, maskUntrusted, maskDefective, maskHot)
         fileName = os.path.basename(fileName) # preparing writing to new location
         frame.save(os.path.join(pathToSubtracted, bgName + fileName))
-        print("Background subtracted from  %s" % fileName, end='\r')
+        print("Background subtracted from %s" % fileName, end='\r')
         del frame # cleaning up memory
     print("\nDone!")
 
