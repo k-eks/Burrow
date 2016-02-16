@@ -240,7 +240,7 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFramesP
             scale = bgFluxes[i] / frameFlux
             bgAll += bgData[i] / scale * backgroundMixture[i]
         frame.data -= bgAll # here is the actual backround subtraction
-        frame.data = frame.data.astype(np.int32)
+        frame.data = frame.data.round().astype(np.int32) # make resonable counts
         frame.data += abs(np.min(frame.data)) # scaling to remove negative values
         frame.data = cbf_tools.restore_pixel_mask(frame, maskUntrusted, maskDefective, maskHot)
         fileName = os.path.basename(fileName) # preparing writing to new location
