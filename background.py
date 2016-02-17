@@ -226,6 +226,8 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFramesP
     for fileName in backgroundFrameNames:
         bgFluxes.append(get_flux_from_file_name(os.path.join(backgroundFramesPath, fileName)))
         bgData.append(cbf_tools.h5_to_numpy(backgroundFramesPath, fileName, ()))
+    print(bgFluxes)
+    print(bgData)
 
     helping_tools.check_folder(pathToSubtracted)
     print("Reading masks, please wait!")
@@ -293,5 +295,6 @@ def get_flux_from_file_name(fileName):
     """
     fileName = os.path.basename(fileName)
     # flux is encoded between the last underscore and the first dot
-    flux = fileName.split('_')[-1].split('.')[0]
-    return int(flux)
+    flux = int(fileName.split('_')[-1].split('.')[0])
+    print("Flux of %s is %s" % (fileName, flux))
+    return flux
