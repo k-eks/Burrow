@@ -239,7 +239,7 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFramesP
         # mix the background frame
         bgAll = np.zeros(frame.data.shape)
         for i in range(bgCount):
-            print(bgFluxes[i], frameFlux)
+            print(i, bgFluxes[i], frameFlux)
             scale = bgFluxes[i] / frameFlux
             bgAll += bgData[i] / scale * backgroundMixture[i]
         frame.data = bgAll # here is the actual backround subtraction
@@ -248,7 +248,7 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFramesP
         #frame.data = cbf_tools.restore_pixel_mask(frame, maskUntrusted, maskDefective, maskHot)
         fileName = os.path.basename(fileName) # preparing writing to new location
         frame.save(os.path.join(pathToSubtracted, bgName + fileName))
-        print("Background subtracted from %s" % fileName, end='\r')
+        print("Background subtracted from %s" % fileName) #, end='\r')
         del frame # cleaning up memory
     print("\nDone!")
 
