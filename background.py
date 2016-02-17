@@ -238,16 +238,14 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFramesP
         frame = fabio.open(fileName)
         frameFlux = cbf_tools.get_flux(frame)
         # mix the background frame
-        bgAll = np.zeros(frame.data.shape, dtype=np.float)
+        bgAll = np.zeros(frame.data.shape)
         for i in range(bgCount):
-            print(i, bgFluxes[i], frameFlux, backgroundMixture[i])
             scale = bgFluxes[i] / frameFlux
-            print(scale)
-            bgAll += bgData[i] / scale #* backgroundMixture[i]
-        frame.data = bgAll # here is the actual backround subtraction
-        #frame.data = frame.data.round().astype(np.int32) # make resonable counts
-        #frame.data += abs(np.min(frame.data)) # scaling to remove negative values
-        #frame.data = cbf_tools.restore_pixel_mask(frame, maskUntrusted, maskDefective, maskHot)
+            bgAll += bgData[i] / scale * backgroundMixture[i]
+        frame.data -= bgAll # here is the actual backround subtraction
+        frame.data = frame.data.round().astype(np.int32) # make resonable counts
+        frame.data += abs(np.min(frame.data)) # scaling to remove negative values
+        frame.data = cbf_tools.restore_pixel_mask(frame, maskUntrusted, maskDefective, maskHot)
         fileName = os.path.basename(fileName) # preparing writing to new location
         frame.save(os.path.join(pathToSubtracted, bgName + fileName))
         print("Background subtracted from %s" % fileName) #, end='\r')
