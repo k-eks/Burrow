@@ -227,8 +227,6 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFramesP
     for fileName in backgroundFrameNames:
         bgFluxes.append(get_flux_from_file_name(os.path.join(backgroundFramesPath, fileName)))
         bgData.append(cbf_tools.h5_to_numpy(backgroundFramesPath, fileName, ()))
-    print(bgFluxes)
-    print(bgData)
 
     helping_tools.check_folder(pathToSubtracted)
     print("Reading masks, please wait!")
@@ -245,10 +243,10 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFramesP
         frame.data -= bgAll # here is the actual backround subtraction
         frame.data = frame.data.round().astype(np.int32) # make resonable counts
         frame.data += abs(np.min(frame.data)) # scaling to remove negative values
-        frame.data = cbf_tools.restore_pixel_mask(frame, maskUntrusted, maskDefective, maskHot)
+        #frame.data = cbf_tools.restore_pixel_mask(frame, maskUntrusted, maskDefective, maskHot)
         fileName = os.path.basename(fileName) # preparing writing to new location
         frame.save(os.path.join(pathToSubtracted, bgName + fileName))
-        print("Background subtracted from %s" % fileName) #, end='\r')
+        print("Background subtracted from %s" % fileName, end='\r')
         del frame # cleaning up memory
     print("\nDone!")
 
