@@ -221,6 +221,15 @@ def generate_bg_chunked_master(pathToBgFrames, templateFrame, frameRange, percen
 
 def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFramesPath,
                                backgroundFrameNames, backgroundMixture, bgName, maskFrame):
+    """Generates a flux normalized background from multiple sources and subtracts it from the raw data.
+    pathToFrames ... string location of the folder which contains the frames
+    pathToSubtracted ... string location where the processed frames should be saved
+    backgroundFramesPath ... string location where the background frames are stored
+    backgroundFrameNames ... array[string] names of the background files which should be used
+    backgroundMixture ... array[float] contribution of each background frame for the final background image
+    bgName ... string prefix which should be added to the modified frames
+    maskFrame ... fabio.frame frame which contains all pixel that should be masked
+    """
     bgFluxes = []
     bgData = []
     bgCount = len(backgroundFrameNames)
