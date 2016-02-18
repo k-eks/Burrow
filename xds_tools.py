@@ -1,4 +1,5 @@
 from __future__ import print_function # python 2.7 compatibility
+from __future__ import division # python 2.7 compatibility
 
 import sys
 sys.path.append("/cluster/home/hoferg/python/lib64/python2.7/site-packages")
@@ -161,4 +162,5 @@ def copy_xds_template(pathToXds, pathToDestination):
     pathToDestination ... string path were the new copy should be placed
     """
     shutil.copy(pathToXds, os.path.join(pathToDestination, "XDS.INP"))
+    print("Copied the XDS template to %s" % pathToDestination)
     # I'm not exactly sure why I need the function
