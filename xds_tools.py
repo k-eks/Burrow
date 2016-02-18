@@ -59,7 +59,7 @@ def XDS_update(pathToXdsFiles, updateOptions):
             oldCellIndex = get_xds_index(xds, "UNIT_CELL_CONSTANTS")
             if oldCellIndex == None:
                 raise IndexError("No unit cell entry found!")
-            print("Old cell is %s" % xds[i].split('=')[1])
+            print("Old cell is %s" % xds[oldCellIndex].split('=')[1])
 
             # hunt the new unit cell
             with open(IDXREFPath) as file:
