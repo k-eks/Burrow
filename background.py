@@ -184,7 +184,7 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     # write the cbf file
     templateFrame.write(os.path.join(pathToBackground, outputName % outputModifiers))
     # write the h5 file
-    cbf_tools.frame_to_h5(templateFrame, pathToBackground, outputName + ".h5", outputModifiers)
+    cbf_tools.frame_to_h5(templateFrame, os.path.join(pathToBackground, outputName + ".h5"), outputModifiers)
 
 
 @helping_tools.deprecated
@@ -219,12 +219,11 @@ def generate_bg_chunked_master(pathToBgFrames, templateFrame, frameRange, percen
         print("\nCreated ceiled background!")
 
 
-def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFramesPath,
-                               backgroundFrameNames, backgroundMixture, bgName, maskFrame):
+def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFrameNames,
+                               backgroundMixture, bgName, maskFrame):
     """Generates a flux normalized background from multiple sources and subtracts it from the raw data.
     pathToFrames ... string location of the folder which contains the frames
     pathToSubtracted ... string location where the processed frames should be saved
-    backgroundFramesPath ... string location where the background frames are stored
     backgroundFrameNames ... array[string] names of the background files which should be used
     backgroundMixture ... array[float] contribution of each background frame for the final background image
     bgName ... string prefix which should be added to the modified frames
@@ -234,8 +233,8 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFramesP
     bgData = []
     bgCount = len(backgroundFrameNames)
     for fileName in backgroundFrameNames:
-        bgFluxes.append(get_flux_from_file_name(os.path.join(backgroundFramesPath, fileName)))
-        bgData.append(cbf_tools.h5_to_numpy(backgroundFramesPath, fileName, ()))
+        bgFluxes.append(get_flux_from_file_name(fileName))
+        bgData.append(cbf_tools.h5_to_numpy(fileName, ()))
 
     helping_tools.check_folder(pathToSubtracted)
     print("Reading masks, please wait!")

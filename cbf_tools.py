@@ -300,33 +300,31 @@ def split_revolutions(pathToFrames, nameTempalte):
             print("Moved %s" % os.path.basename(source), end='\r')
 
 
-def frame_to_h5(frame, outputPath, outputName, outputModifiers=""):
+def frame_to_h5(frame, outputName, outputModifiers=""):
     """Turns a frame into a h5 file.
     frame ... fabio.frame frame which contains the data that should be saved as h5 file
-    outputPath ... string location where the file should be dumped
     outputName ... string name of the finished h5 file, allows percent substituiton
     outputModifiers ... string plus-sign seperated string list, these modfieres are used to susbtitute outputName
     """
     # decode the output modifiers
     outputModifiers = helping_tools.parse_substition_modifiers(outputModifiers)
-    outputPath = os.path.join(outputPath, outputName % outputModifiers)
+    outputName = outputName % outputModifiers
     h5 = h5py.File(outputPath, 'w')
     h5.create_dataset('frame', data=frame.data)
     h5.close()
-    print("Written %s" % outputPath)
+    print("Written %s" % outputName)
 
 
-def h5_to_numpy(inputPath, inputName, inputModifiers=()):
+def h5_to_numpy(inputName, inputModifiers=()):
     """Turns a h5 file, which contains frame data into a numpy array.
-    inputPath ... string location where the file should be read from
     inputName ... string name of the h5 file, allows percent substituiton
     inputModifiers ... string plus-sign seperated string list, these modfieres are used to susbtitute inputName
     returns numpy.array2d data which was in the 'frame' section of the h5 file
     """
-    inputPath = os.path.join(inputPath, inputName % inputModifiers)
-    h5 = h5py.File(inputPath, 'r')
+    inputName = inputName % inputModifiers)
+    h5 = h5py.File(inputName, 'r')
     data = np.asarray(h5['frame'])
-    print("Successfully read %s" % inputPath)
+    print("Successfully read %s" % inputName)
     return data
 
 
