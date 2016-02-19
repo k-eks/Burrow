@@ -172,7 +172,7 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
             bg[subx * subsize : subx * subsize + width,
                suby * subsize : suby * subsize + height] = get_percentile(subFrame, subFrame.shape, percentile)
 
-    helping_tools.check_folder(pathToSubtracted)
+    helping_tools.check_folder(pathToBackground)
     # create and write the flux monitor
     fluxFileName = "fluxmonitor_" + outputName + ".csv"
     flux = cbf_tools.average_flux(pathToFrames, pathToBackground, fluxFileName % outputModifiers)
