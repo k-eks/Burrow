@@ -321,7 +321,7 @@ def h5_to_numpy(inputName, inputModifiers=()):
     inputModifiers ... string plus-sign seperated string list, these modfieres are used to susbtitute inputName
     returns numpy.array2d data which was in the 'frame' section of the h5 file
     """
-    inputName = inputName % inputModifiers)
+    inputName = inputName % inputModifiers
     h5 = h5py.File(inputName, 'r')
     data = np.asarray(h5['frame'])
     print("Successfully read %s" % inputName)
@@ -394,3 +394,12 @@ def restore_pixel_mask(frame, defective, untrusted, hot):
     data[untrusted] = UNTRUSTED
     data[hot] = DEFECTIVE
     return np.reshape(data, frame.data.shape)
+
+
+class Frameset():
+
+    def __init__(self, pathToFrames):
+        self.pathToFrames = pathToFrames
+        self.nameTemaplate = ""
+        self.setSize = 3600
+        self.revSize = 1
