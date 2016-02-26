@@ -31,7 +31,7 @@ def submit_euler_job(parameters, **kwargs):
                 command.append(["-N", "-u", DEFAULT_EMAIL]) # this should be an input value
 
     command.append(parameters)
-    command = np.hstack(np.asarray(command).flat)
+    command = np.hstack(np.asarray(command, dtype=object).flat)
     print("Parsed job for EULER is %s" % command)
     subprocess.call(command)
 
