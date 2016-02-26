@@ -30,6 +30,7 @@ def submit_euler_job(parameters, **kwargs):
             elif key == "notify":
                 command.append(["-N", "-u", DEFAULT_EMAIL]) # this should be an input value
 
+    command.append(parameters)
     command = np.asarray(command).flatten()
     print("Parsed job for EULER is %s" % command)
     subprocess.call(command)
