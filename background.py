@@ -246,7 +246,7 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFrameNa
         # mix the background frame
         bgAll = np.zeros(frame.data.shape)
         for i in range(bgCount):
-            scale = bgFluxes[i] / frameFlux
+            scale = frameFlux / bgFluxes[i]
             bgAll += bgData[i] / scale * backgroundMixture[i]
         frame.data -= bgAll # here is the actual backround subtraction
         frame.data = frame.data.round().astype(np.int32) # make resonable counts
