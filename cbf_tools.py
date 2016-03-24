@@ -409,5 +409,5 @@ class Frameset():
         frameNames = []
         for r in range(self.revSize):
             for i in range(self.setSize):
-                frameNames.append(templateName % (r, i))
+                frameNames.append(templateName % (r + 1, i + 1)) # frames are not zero based!
         return frameNames
