@@ -62,7 +62,8 @@ def average_flux(pathToFrames, outputPath, outputName, outputModifiers=""):
     flux = 0
     fluxChange = [] # for monitoring
     print("Starting flux averaging")
-    for file in glob.glob(pathToFrames + "/*.cbf"):
+    frameset = cbf_tools.Frameset(pathToFrames)
+    for file in frameset.generate_frame_names_from_template(pathToFrames):
         frame = fabio.open(file)
         currentFlux = get_flux(frame)
         print("Working on %s, current flux is %s" % (os.path.basename(file), currentFlux), end='\r')
