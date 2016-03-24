@@ -400,7 +400,7 @@ class Frameset():
 
     def __init__(self, pathToFrames):
         self.pathToFrames = pathToFrames
-        self.nameTemaplate = ""
+        self.nameTemaplate = "frame_0_0_80_%04ip_%05i.cbf" # default name
         self.setSize = 3600
         self.revSize = 1
 
@@ -412,5 +412,6 @@ class Frameset():
         frameNames = []
         for r in range(self.revSize):
             for i in range(self.setSize):
-                frameNames.append(self.nameTemaplate % (r + 1, i + 1)) # frames are not zero based!
+                currentFrame = self.nameTemaplate % (r + 1, i + 1) # frames are not zero based!
+                frameNames.append(os.join(self.pathToFrames, currentFrame)
         return frameNames

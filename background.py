@@ -240,7 +240,8 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFrameNa
     print("Reading masks, please wait!")
     maskUntrusted, maskDefective, maskHot = cbf_tools.generate_all_unwanted_pixel(maskFrame, 1000000)
     print("starting subtracting\n")
-    for fileName in glob.glob(os.path.join(pathToFrames, "*.cbf")):
+    frameset = cbf_tools.Frameset(pathToFrames)
+    for fileName in frameset.generate_frame_names_from_template():
         frame = fabio.open(fileName)
         frameFlux = cbf_tools.get_flux(frame)
         # mix the background frame
