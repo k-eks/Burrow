@@ -414,5 +414,5 @@ class Frameset():
         for r in range(self.revSize):
             for i in range(self.setSize):
                 currentFrame = self.nameTemaplate % (r + 1, i + 1) # frames are not zero based!
-                frameNames.append(os.join(self.pathToFrames, currentFrame))
+                frameNames.append(os.path.join(self.pathToFrames, currentFrame))
         return frameNames
