@@ -310,7 +310,7 @@ def frame_to_h5(frame, outputName, outputModifiers=""):
     # decode the output modifiers
     outputModifiers = helping_tools.parse_substition_modifiers(outputModifiers)
     outputName = outputName % outputModifiers
-    h5 = h5py.File(outputPath, 'w')
+    h5 = h5py.File(outputName, 'w')
     h5.create_dataset('frame', data=frame.data)
     h5.close()
     print("Written %s" % outputName)
