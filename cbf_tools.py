@@ -403,3 +403,11 @@ class Frameset():
         self.nameTemaplate = ""
         self.setSize = 3600
         self.revSize = 1
+
+
+    def generate_frame_names_from_template(self):
+        frameNames = []
+        for r in range(self.revSize):
+            for i in range(self.setSize):
+                frameNames.append(templateName % (r, i))
+        return frameNames
