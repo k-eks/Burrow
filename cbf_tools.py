@@ -406,8 +406,11 @@ class Frameset():
 
 
     def generate_frame_names_from_template(self):
+        """Creates an array of frame names based on the template for all revolutions and frame numbers.
+        returns ... array[string] all generated frame names
+        """
         frameNames = []
         for r in range(self.revSize):
             for i in range(self.setSize):
-                frameNames.append(templateName % (r + 1, i + 1)) # frames are not zero based!
+                frameNames.append(self.nameTemaplate % (r + 1, i + 1)) # frames are not zero based!
         return frameNames
