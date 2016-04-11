@@ -399,13 +399,21 @@ def restore_pixel_mask(frame, defective, untrusted, hot):
     return np.reshape(data, frame.data.shape)
 
 
-class Frameset():
+class Frameset(object):
 
     def __init__(self, pathToFrames):
         self.pathToFrames = pathToFrames
         self.nameTemaplate = "frame_0_0_80_%04ip_%05i.cbf" # default name
         self.setSize = 3600
         self.revSize = 1
+
+
+    @setSize.setter
+    def setSize(self, value):
+        """Sets the new value for the frame set size
+        value ... typecast able to integer, the new value for set size
+        """
+        self._setSize = int(value)
 
 
     def generate_frame_names_from_template(self):
