@@ -408,6 +408,13 @@ class Frameset(object):
         self.revSize = 1
 
 
+    @property
+    """Getter for setSize.
+    returns int number of frames in the revolution
+    """
+    def setSize(self):
+        return self._setSize
+
     @setSize.setter
     def setSize(self, value):
         """Sets the new value for the frame set size
