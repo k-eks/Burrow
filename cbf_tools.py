@@ -409,10 +409,10 @@ class Frameset(object):
 
 
     @property
-    """Getter for setSize.
-    returns int number of frames in the revolution
-    """
     def setSize(self):
+        """Getter for setSize variable.
+        returns int number of frames in the revolution
+        """
         return self._setSize
 
     @setSize.setter
