@@ -47,11 +47,12 @@ def get_flux(frame):
     return int(flux)
 
 
-def average_flux(pathToFrames, outputPath, outputName, outputModifiers=""):
+def average_flux(pathToFrames, outputPath, outputName, frameRange, outputModifiers=""):
     """Calculates the average flux of the frames in the current folder and monitors the change in flux.
     pathToFrames ... string path to the folder which contains the frames
     outputPath ... string location where the file should be dumped
     outputName ... string name of the finished flux file, allows percent substituiton
+    frameRange ... int number of frames in the set
     outputModifiers ... string plus-sign seperated string list, these modfieres are used to susbtitute outputName
     returns int averaged flux
     """
@@ -63,6 +64,7 @@ def average_flux(pathToFrames, outputPath, outputName, outputModifiers=""):
     fluxChange = [] # for monitoring
     print("Starting flux averaging")
     frameset = Frameset(pathToFrames)
+    frameset.setSize = rameRange
     for file in frameset.generate_frame_names_from_template():
         frame = fabio.open(file)
         currentFlux = get_flux(frame)
