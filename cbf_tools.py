@@ -64,7 +64,7 @@ def average_flux(pathToFrames, outputPath, outputName, frameRange, outputModifie
     fluxChange = [] # for monitoring
     print("Starting flux averaging")
     frameset = Frameset(pathToFrames)
-    frameset.setSize = rameRange
+    frameset.setSize = frameRange
     for file in frameset.generate_frame_names_from_template():
         frame = fabio.open(file)
         currentFlux = get_flux(frame)
