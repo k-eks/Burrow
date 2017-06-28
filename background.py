@@ -234,7 +234,12 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFrameNa
     bgCount = len(backgroundFrameNames)
     for fileName in backgroundFrameNames:
         bgFluxes.append(get_flux_from_file_name(fileName))
-        bgData.append(cbf_tools.h5_to_numpy(fileName, ()))
+        # grab the file extension, NOTE: extension includes the dot!!!!!!!!!!!
+        fileType = os.path.splitext(fileName)[1]
+        if fileType == '.h5':
+            bgData.append(cbf_tools.h5_to_numpy(fileName, ()))
+        elif fileType == '.cbf':
+            bgData.append(fabio.open(fileName).data)
 
     helping_tools.check_folder(pathToSubtracted)
     print("Reading masks, please wait!")
