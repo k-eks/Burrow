@@ -400,6 +400,7 @@ def restore_pixel_mask(frame, defective, untrusted, hot):
 
 
 class Frameset(object):
+# REMARK: Frames shall not start their numbering with 0!!!!!!!!!!!!!!!!!!!!!!!
 
     def __init__(self, pathToFrames, nameTemaplate=None):
         self.pathToFrames = pathToFrames
@@ -413,7 +414,7 @@ class Frameset(object):
 
     @property
     def setSize(self):
-        """Getter for setSize variable.
+        """Getter for setSize variable which descibes how many frames are recorded per revolution.
         returns int number of frames in the revolution
         """
         return self._setSize
@@ -424,6 +425,21 @@ class Frameset(object):
         value ... typecast able to integer, the new value for set size
         """
         self._setSize = int(value)
+
+
+    @property
+    def revSize(self):
+        """Getter for revSize variable which describes how many revolutions are in the set.
+        returns int number of frames in the revolution
+        """
+        return self._revSize
+
+    @srevSize.setter
+    def revSize(self, value):
+        """Sets the new value for the frame set size
+        value ... typecast to integer, the new value for revolution size
+        """
+        self._revSize = int(value)
 
 
     def generate_frame_names_from_template(self):
