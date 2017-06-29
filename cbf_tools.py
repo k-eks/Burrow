@@ -401,9 +401,12 @@ def restore_pixel_mask(frame, defective, untrusted, hot):
 
 class Frameset(object):
 
-    def __init__(self, pathToFrames):
+    def __init__(self, pathToFrames, nameTemaplate=None):
         self.pathToFrames = pathToFrames
-        self.nameTemaplate = "frame_0_0_80_%04ip_%05i.cbf" # default name
+        if nameTempalte == None:
+            self.nameTemaplate = DEFAULT_FRAME_NAME
+        else:
+            self.nameTempalte = nameTempalte
         self.setSize = 3600
         self.revSize = 1
 
