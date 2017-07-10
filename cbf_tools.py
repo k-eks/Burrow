@@ -47,6 +47,24 @@ def get_flux(frame):
     return int(flux)
 
 
+def get_exposure(frame):
+    """Reads the exposure out of a frames header.
+    frame ... fabio.frame the fabio class of the frame from which the exposure time needs to be known
+    returns int the flux rate
+    """
+    exposure = -1
+    headerData = frame.header['_array_data.header_contents']
+    # header is a dict object, the flux is located under the given key
+    if "Flux" in headerData:
+        # get the flux by substring filtering
+        exposure = headerData[headerData.index("Exposure_period") + len("Exposure_period ") : headerData.index(" s", headerData.index("Exposure_period"))]
+    else:
+        # this would be a very serious problem
+        raise AttributeError("Exposure time not found in frame %s!" % frame.filename)
+
+    return exposure
+
+
 def average_flux(pathToFrames, outputPath, outputName, frameRange, outputModifiers=""):
     """Calculates the average flux of the frames in the current folder and monitors the change in flux.
     pathToFrames ... string path to the folder which contains the frames
@@ -402,12 +420,12 @@ def restore_pixel_mask(frame, defective, untrusted, hot):
 class Frameset(object):
 # REMARK: Frames shall not start their numbering with 0!!!!!!!!!!!!!!!!!!!!!!!
 
-    def __init__(self, pathToFrames, nameTemaplate=None):
+    def __init__(self, pathToFrames, nameTemplate=None):
         self.pathToFrames = pathToFrames
-        if nameTempalte == None:
-            self.nameTemaplate = DEFAULT_FRAME_NAME
+        if nameTemplate == None:
+            self.nameTemplate = DEFAULT_FRAME_NAME
         else:
-            self.nameTempalte = nameTempalte
+            self.nameTemplate = nameTemplate
         self.setSize = 3600
         self.revSize = 1
 
@@ -434,7 +452,7 @@ class Frameset(object):
         """
         return self._revSize
 
-    @srevSize.setter
+    @revSize.setter
     def revSize(self, value):
         """Sets the new value for the frame set size
         value ... typecast to integer, the new value for revolution size
@@ -449,6 +467,6 @@ class Frameset(object):
         frameNames = []
         for r in range(self.revSize):
             for i in range(self.setSize):
-                currentFrame = self.nameTemaplate % (r + 1, i + 1) # frames are not zero based!
+                currentFrame = self.nameTemplate % (r + 1, i + 1) # frames are not zero based!
                 frameNames.append(os.path.join(self.pathToFrames, currentFrame))
         return frameNames
