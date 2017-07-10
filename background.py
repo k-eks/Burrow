@@ -139,7 +139,7 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     # parse the modifiers
     outputModifiers = helping_tools.parse_substition_modifiers(outputModifiers)
     fileNames = []
-    frameset = cbf_tools.Frameset(pathToFrames)
+    frameset = cbf_tools.Frameset(pathToFrames, nameTemplate)
     fileNames = frameset.generate_frame_names_from_template()
 
     templateFrame = fabio.open(fileNames[0]) # just a prototype
@@ -245,7 +245,7 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFrameNa
     print("Reading masks, please wait!")
     maskUntrusted, maskDefective, maskHot = cbf_tools.generate_all_unwanted_pixel(maskFrame, 1000000)
     print("starting subtracting\n")
-    frameset = cbf_tools.Frameset(pathToFrames)
+    frameset = cbf_tools.Frameset(pathToFrames, backgroundFrameNames)
     for fileName in frameset.generate_frame_names_from_template():
         frame = fabio.open(fileName)
         frameFlux = cbf_tools.get_flux(frame)
