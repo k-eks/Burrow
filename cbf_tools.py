@@ -50,7 +50,7 @@ def get_flux(frame):
 def get_exposure(frame):
     """Reads the exposure out of a frames header.
     frame ... fabio.frame the fabio class of the frame from which the exposure time needs to be known
-    returns int the flux rate
+    returns float the exposure time
     """
     exposure = -1
     headerData = frame.header['_array_data.header_contents']
@@ -62,7 +62,7 @@ def get_exposure(frame):
         # this would be a very serious problem
         raise AttributeError("Exposure time not found in frame %s!" % frame.filename)
 
-    return exposure
+    return float(exposure)
 
 
 def average_flux(pathToFrames, nameTemplate, outputPath, outputName, frameRange, outputModifiers=""):
