@@ -65,9 +65,10 @@ def get_exposure(frame):
     return exposure
 
 
-def average_flux(pathToFrames, outputPath, outputName, frameRange, outputModifiers=""):
+def average_flux(pathToFrames, nameTemplate, outputPath, outputName, frameRange, outputModifiers=""):
     """Calculates the average flux of the frames in the current folder and monitors the change in flux.
     pathToFrames ... string path to the folder which contains the frames
+    nameTemplate ... string format of the frame names, allows percent substitution
     outputPath ... string location where the file should be dumped
     outputName ... string name of the finished flux file, allows percent substituiton
     frameRange ... int number of frames in the set
@@ -81,7 +82,7 @@ def average_flux(pathToFrames, outputPath, outputName, frameRange, outputModifie
     flux = 0
     fluxChange = [] # for monitoring
     print("Starting flux averaging")
-    frameset = Frameset(pathToFrames)
+    frameset = Frameset(pathToFrames, nameTemplate)
     frameset.setSize = frameRange
     for file in frameset.generate_frame_names_from_template():
         frame = fabio.open(file)
@@ -465,6 +466,7 @@ class Frameset(object):
         returns ... array[string] all generated frame names
         """
         frameNames = []
+        print("Generating name templates, template name is %s" %self.nameTemplate)
         for r in range(self.revSize):
             for i in range(self.setSize):
                 currentFrame = self.nameTemplate % (r + 1, i + 1) # frames are not zero based!

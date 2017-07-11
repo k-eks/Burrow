@@ -128,7 +128,7 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     """Creates a background by only reading in parts of frames and puzzeling these parts together.
     pathToFrames ... string location of the folder which contains the frames
     pathToBackground ... string location where the background frame should be placed
-    nameTemplate ... string format of the frame names
+    nameTemplate ... string format of the frame names, allows percent substitution
     frameRange ... int maximum number of frames over which to run the algorithm
     subsize ... int number of pixels in x and y directions to determine the subframe size
                 this is used to save memory
@@ -175,7 +175,7 @@ def generate_subframe_background_percentile(pathToFrames, pathToBackground, name
     helping_tools.check_folder(pathToBackground)
     # create and write the flux monitor
     fluxFileName = "fluxmonitor_" + outputName + ".csv"
-    flux = cbf_tools.average_flux(pathToFrames, pathToBackground, fluxFileName % outputModifiers, frameRange)
+    flux = cbf_tools.average_flux(pathToFrames, nameTemplate, pathToBackground, fluxFileName % outputModifiers, frameRange)
     # writing the background file
     templateFrame.data = bg.astype(np.int32)
     fileName, fileExtension = os.path.splitext(outputName)
