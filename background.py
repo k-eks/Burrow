@@ -265,28 +265,22 @@ def subtract_hybrid_background(pathToFrames, pathToSubtracted, backgroundFrameNa
     print("\nDone!")
 
 
-def subtract_single_frame(pathToFrames, pathToSubtracted, namePrefix, single, maskFrame):
-    """Subtracts a flux normalized frame from a dataset.
+def subtract_single_frame(pathToFrames, pathToSubtracted, namePrefix, singleFrame, maskFrame):
+    """Subtracts a single frame from a dataset without any further alterations such as a flux correction.
     pathToFrames ... string location of the folder which contains the frames
     pathToSubtracted ... string location where the processed frames should be saved
     namePrefix ... string short text that is added to each newly calculated frame
-    single ... fabio.frame this frame will be substracted from the dataset
+    singleFrame ... fabio.frame this frame will be substracted from the dataset
     maskFrame ... fabio.frame frame which contains all pixel that should be masked
     """
     helping_tools.check_folder(pathToSubtracted)
-    print("Reading subtraction frame...")
-    singleFlux = cbf_tools.get_flux(single)
+    singleData = singleFrame.data.copy()
     print("Reading masks, please wait!")
     maskUntrusted, maskDefective, maskHot = cbf_tools.generate_all_unwanted_pixel(maskFrame, 1000000)
     print("starting subtracting\n")
     frameset = cbf_tools.Frameset(pathToFrames)
     for fileName in frameset.generate_frame_names_from_template():
-        singleData = single.data.copy()
         frame = fabio.open(fileName)
-        frameFlux = cbf_tools.get_flux(frame)
-        # normalizing intensity onto the flux
-        fluxRatio = frameFlux / singleFlux
-        singleData = singleData * fluxRatio
         frame.data -= singleData.astype(np.int32) # here is the actual frame subtraction
         frame.data = frame.data.round().astype(np.int32) # make resonable counts
         frame.data = cbf_tools.restore_pixel_mask(frame, maskUntrusted, maskDefective, maskHot)
@@ -294,7 +288,6 @@ def subtract_single_frame(pathToFrames, pathToSubtracted, namePrefix, single, ma
         frame.save(os.path.join(pathToSubtracted, namePrefix + fileName))
         print("Frame subtracted from %s" % fileName, end='\r')
         del frame # cleaning up memory
-        del singleData # cleaning up memory
     print("\nDone!")
 
 
