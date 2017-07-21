@@ -24,7 +24,7 @@ def submit_euler_job(parameters, **kwargs):
             if key == "cpus":
                 command.append(["-n", value])
             elif key == "memory":
-                command.append(["-R", value])
+                command.append(["-R", "\"rusage[mem=%i]\"" % value])
             elif key == "hours":
                 command.append(["-W", "%s:00" % value])
             elif key == "notify":
@@ -38,6 +38,6 @@ def submit_euler_job(parameters, **kwargs):
 
 def show_job_keys():
     print("cpus ... int number of CPUs to request")
-    print("memory ... int amount of memory to request")
+    print("memory ... int amount of memory to request per cpu in multiples of 1024")
     print("hours ... int approximate time for calculation, default is four hours")
     print("notify ... unfinished write an email to default user upon job completion")
