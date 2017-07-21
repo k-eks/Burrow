@@ -6,6 +6,7 @@ sys.path.append("/cluster/home/hoferg/python/lib64/python2.7/site-packages")
 sys.path.append("/cluster/home/hoferg/python/lib64/python3.3/site-packages")
 
 import numpy as np
+import scipy.signal
 import os.path
 import fabio
 import xds_tools
@@ -294,6 +295,69 @@ def subtract_single_frame(pathToFrames, pathToSubtracted, namePrefix, single, ma
         print("Frame subtracted from %s" % fileName, end='\r')
         del frame # cleaning up memory
         del singleData # cleaning up memory
+    print("\nDone!")
+
+
+@helping_tools.deprecated
+# this function is incomplete, the SavGol filter is not reliable around Bragg peaks ****************************************************
+def SavGol_filter(pathToFrames, nameTemplate, frameRange, pathToFiltered, namePrefix, maskFrame, subsize, windowLength, polyOrder):
+    """Subtracts a flux normalized frame from a dataset.
+    pathToFrames ... string location of the folder which contains the frames
+    pathToSubtracted ... string location where the processed frames should be saved
+    namePrefix ... string short text that is added to each newly calculated frame
+    single ... fabio.frame this frame will be substracted from the dataset
+    maskFrame ... fabio.frame frame which contains all pixel that should be masked
+    """
+    helping_tools.check_folder(pathToFiltered)
+    print("Reading masks, please wait!")
+    # maskUntrusted, maskDefective, maskHot = cbf_tools.generate_all_unwanted_pixel(maskFrame, 1000000)
+    print("starting filtering\n")
+    # generating frame paths and names for reading
+    frameset = cbf_tools.Frameset(pathToFrames, nameTemplate)
+    frameset.setSize = frameRange
+    fileNames = frameset.generate_frame_names_from_template()
+    # generating frame paths and names for writing
+    frameset = cbf_tools.Frameset(pathToFiltered, namePrefix + nameTemplate)
+    frameset.setSize = frameRange
+    newFiles = frameset.generate_frame_names_from_template()
+
+    templateFrame = fabio.open(fileNames[0])
+    # determination of how many tiles are necessary for the subdivition of the frames
+    tilesx = int(templateFrame.data.shape[0] / subsize) + 1
+    tilesy = int(templateFrame.data.shape[1] / subsize) + 1
+    for subx in range(tilesx):
+        for suby in range(tilesy):
+            print("\nWorking on sub %i of %i" % ((suby * (subx + 1) + subx), tilesx * tilesy))
+            # generation of the subframe size taking the border regions into account
+            if (subx + 2) > tilesx:
+                width = templateFrame.data.shape[0] - subx * subsize
+            else:
+                width = subsize
+            if (suby + 2) > tilesy:
+                height = templateFrame.data.shape[1] - suby * subsize
+            else:
+                height = subsize
+            print("Width %i, height %i" % (width, height))
+            subFrame = np.zeros((width, height, frameRange))
+            for i in range(frameRange):
+                print("Reading frame " + fileNames[i])#, end="\r")
+                frame = fabio.open(fileNames[i])
+                subFrame[:, : , i] = frame.data[subx * subsize : subx * subsize + width,
+                                                suby * subsize : suby * subsize + height].copy()
+                del frame # cleaning memory
+            print("\nApplying SavGol filter...")
+            for x in range(subFrame.shape[0]):
+                for y in range(subFrame.shape[1]):
+                    print(x, y, end="\r")
+                    filterLine = subFrame[x, y, :]
+                    subFrame[x, y, :] = scipy.signal.savgol_filter(filterLine, windowLength, polyOrder, mode='wrap').copy()
+            subframe = subFrame.astype(np.int32)
+            for i in range(frameRange):
+                print("Writing frame " + newFiles[i])#, end="\r")
+                frame = fabio.open(newFiles[i])
+                frame.data[subx * subsize : subx * subsize + width, suby * subsize : suby * subsize + height] = subFrame[:, : , i]
+                frame.save(os.path.join(pathToFiltered, namePrefix + os.path.basename(frame.filename)))
+                del frame # cleaning memory
     print("\nDone!")
 
 
