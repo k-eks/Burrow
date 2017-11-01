@@ -9,11 +9,44 @@ import h5py
 import numpy as np
 import xds_tools
 import meerkat_tools
+import helping_tools
 import math
 import glob
 import fabio
 import os
+import astropy
+import scipy.ndimage
 
+
+def filler_gauss_fit(pathToFrames, pathToFilled):
+    """
+    Fills punched Bragg peaks by fitting a Gauss function (from astropy) into the hole.
+    pathToFrames ... string location of the punched frames
+    pathToFilled ... string location where the corrected frames should be placed
+    """
+    print("\nWarning: One dilation step is performed on punched Braggs before filling!\n")
+
+    kernel = astropy.convolution.Gaussian2DKernel(stddev=1) # creates a Gauss function for later fitting
+    for imageFile in sorted(glob.glob(pathToFrames + "*.cbf"), key=xds_tools.numericalSort):
+        print("Using " + str(imageFile), end="\r")
+        frame = fabio.open(imageFile)
+        # creating a mask to dilate the Bragg holes
+        dilationMask = frame.data.copy()
+        dilationMask[dilationMask > -99999] = 0
+        dilationMask[dilationMask <= -99999] = 1
+        dilationMask = scipy.ndimage.binary_dilation(dilationMask).astype(dilationMask.dtype)
+        filledData = np.array(frame.data, dtype=np.float32)
+        filledData[dilationMask == 1] = -9999999
+        filledData[filledData < 0] = np.nan
+        filledData = astropy.convolution.interpolate_replace_nans(filledData, kernel).astype(np.int32) # do the fitting and filling
+        filledData[filledData < 0] = -9999999 # re-mask values like detector gaps
+        frame.data = filledData.astype(np.int32)
+        frame.write(pathToFilled + os.path.basename(imageFile)) # writing out
+
+
+
+@helping_tools.deprecated
+# replaced by gaussian filter
 def filler_meerkat_average(clearedFile, originalFile):
     """Turns untrusted voxels and nans to zero and fills punched Braggs."""
     """The filling of the Braggs is done in a two dimensional manner."""
@@ -55,7 +88,8 @@ def filler_meerkat_average(clearedFile, originalFile):
         outfile['data'][:,:,i] = section_punched.data
     outfile.close()
 
-
+@helping_tools.deprecated
+# replaced by gaussian filter
 def filler_frame_average(pathToFrames, pathToFilled):
     """Fills detector frames with the average of the surrounding pixel."""
     for imageFile in sorted(glob.glob(pathToFrames + "*.cbf"), key=xds_tools.numericalSort):
@@ -112,7 +146,8 @@ def find_Bragg_hole(hole, data, x, y):
                 hole = find_Bragg_hole(hole, data, x-1, y+1)
     return hole
 
-
+@helping_tools.deprecated
+# replaced by gaussian filter
 def find_hole(hole, data, x, y):
     """Algorithm for recursive search of holes in a 2D cut."""
     """Looks for all pixels connected to the punched pixel."""
@@ -146,6 +181,8 @@ def find_hole(hole, data, x, y):
                 hole = find_hole(hole, data, x-1, y+1)
     return hole
 
+@helping_tools.deprecated
+# replaced by gaussian filter
 def dilation(hole, shape):
     """Exentds the current hole by its next neighbours"""
     dilated = np.array([])
@@ -171,6 +208,8 @@ def dilation(hole, shape):
     dilated = remove_duplicate_pixel(dilated)
     return dilated
 
+@helping_tools.deprecated
+# replaced by gaussian filter
 def pixel_in_array(searchArray, pixel):
     """Looks if a pixel object is in the given array"""
     result = False
@@ -180,6 +219,8 @@ def pixel_in_array(searchArray, pixel):
             break
     return result
 
+@helping_tools.deprecated
+# replaced by gaussian filter
 def remove_duplicate_pixel(searchArray):
     """Removes all additional pixel objects which have the same coordinates"""
     unique = np.array([])
@@ -188,6 +229,8 @@ def remove_duplicate_pixel(searchArray):
             unique = np.append(unique, item)
     return unique
 
+@helping_tools.deprecated
+# replaced by gaussian filter
 def find_masked_pixel(searchArray, data):
     """Collects all pixel which belong to the masked area."""
     maskedFree = np.array([])
@@ -196,7 +239,8 @@ def find_masked_pixel(searchArray, data):
             maskedFree = np.append(maskedFree, item)
     return maskedFree
 
-
+@helping_tools.deprecated
+# replaced by gaussian filter
 def remove_similar_pixel(searchArray, toRemove):
     """Removes all pixel objects in searchArray  which have the same coordinates as """
     """the pixels in toRemove."""
