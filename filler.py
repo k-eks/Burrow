@@ -10,25 +10,31 @@ import numpy as np
 import xds_tools
 import meerkat_tools
 import helping_tools
+import cbf_tools
 import math
 import glob
 import fabio
 import os
-import astropy
+import astropy.convolution
 import scipy.ndimage
 
 
-def filler_gauss_fit(pathToFrames, pathToFilled):
+def filler_gauss_fit(pathToFrames, pathToFilled, frameNameTemplate, filledPrefix):
     """
     Fills punched Bragg peaks by fitting a Gauss function (from astropy) into the hole.
     pathToFrames ... string location of the punched frames
     pathToFilled ... string location where the corrected frames should be placed
+    frameNameTemplate ... string Example of how the frames are named, allows for percent substitution.
+    filledPrefix ... string prefix that should be put in front of the processed frames.
     """
     print("\nWarning: One dilation step is performed on punched Braggs before filling!\n")
 
+    helping_tools.check_folder(pathToFilled)
+    frameset = cbf_tools.Frameset(pathToFrames, frameNameTemplate)
+
     kernel = astropy.convolution.Gaussian2DKernel(stddev=1) # creates a Gauss function for later fitting
-    for imageFile in sorted(glob.glob(pathToFrames + "*.cbf"), key=xds_tools.numericalSort):
-        print("Using " + str(imageFile), end="\r")
+    for imageFile in frameset.generate_frame_names_from_template():
+        print("Filling " + str(imageFile), end="\r")
         frame = fabio.open(imageFile)
         # creating a mask to dilate the Bragg holes
         dilationMask = frame.data.copy()
@@ -41,7 +47,7 @@ def filler_gauss_fit(pathToFrames, pathToFilled):
         filledData = astropy.convolution.interpolate_replace_nans(filledData, kernel).astype(np.int32) # do the fitting and filling
         filledData[filledData < 0] = -9999999 # re-mask values like detector gaps
         frame.data = filledData.astype(np.int32)
-        frame.write(pathToFilled + os.path.basename(imageFile)) # writing out
+        frame.write(pathToFilled + os.path.basename(filledPrefix + imageFile)) # writing out
 
 
 
