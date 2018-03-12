@@ -388,6 +388,21 @@ def subtract_meerkat_dataset(dataset, subtrahend, outputFileName=None):
 
 
 def extend_yell_file(baseFileName, splitLength=0, offset=0, outputFolder="./"):
+    """
+    Splices additional yell statements into a base file and outputs a yell model.txt
+    baseFileName ... str a standard yell file that is extended by the "input" command.
+    splitLength ... int if larger than 0, multiple yell files are created in different
+                        folders where each model contains up to splitLength number of
+                        RefinableVariables (and the rest is put into the preamble).
+                        All preamble items and RefinableVariables are effected by this!
+                        Each model created that way contains different RefinableVariables
+                        so that all RefinableVariables are accounted for and refined.
+                        This is then a recursive method!
+    offset ... int number of how many RefinableVariables and preamble items should before
+                   be put into the preamble before splitLength number of items are
+                   put into the RefinableVariables section
+    outputFolder ... str folder where to put the resulting model.txt
+    """
     # Preparing the lists which hold the values which are to be inserted into the yell file
     RefinableVariables = []
     MScatterers = []
@@ -496,6 +511,10 @@ def extend_yell_file(baseFileName, splitLength=0, offset=0, outputFolder="./"):
 
 
 def is_useable_input(line):
+    """
+    Tests if a text line is a starting block in the yell extension file.
+    line ... str the text line which should be tested
+    """
     result = True
     unusable = ["RefinableVariables", "Correlations", "Modes", "Preamble", "FileEnd", "MolecularScatterers", "UnitCell"]
 
@@ -505,6 +524,10 @@ def is_useable_input(line):
     return result
 
 def read_extension_file(filePath):
+    """
+    Reads out a yell extension file and stores the additional parameters in arrays.
+    filePath ... str file path and name to the yell extensionfile
+    """
     dataPointer = None
     RefinableVariables = []
     MScatterers = []
