@@ -47,61 +47,61 @@ def make_array_fft_ready(data,NAN_to_zero=True):
     return result
 
 
-def flip_data_set(inputFileName):
+def flip_data_set(baseFileName):
     """
     Inverts a data set when XDS has found the wrong handiness.
-    inputFileName ... string Specifies the file which is to be inverted.
+    baseFileName ... string Specifies the file which is to be inverted.
     """
-    inputFile = h5py.File(inputFileName, 'a')
+    inputFile = h5py.File(baseFileName, 'a')
     data = np.array(inputFile['data'])
     del inputFile['data']
     inputFile['data'] = np.flip(data,2)
     inputFile.close()
 
 
-def fft_dataset(inputFileName, fileForKeys=None):
+def fft_dataset(baseFileName, fileForKeys=None):
     """
     Calculates the absolute, real and imaginary part of the Fourier Transform for a given yell dataset file.
-    inputFileName ... string Specifies the file which is to be transformed.
+    baseFileName ... string Specifies the file which is to be transformed.
     fileForKeys ... string (optional) source file from which to copy the hdf keys to the newly created files.
     """
-    inputFile = h5py.File(inputFileName, 'r')
+    inputFile = h5py.File(baseFileName, 'r')
 
     data = np.array(inputFile['data'])
     print("Shape is %s, make sure it is the correct shape for FFT!" % str(data.shape))
     print("Calculating FFT...")
     data = np.fft.fftshift(np.fft.fftn(np.fft.fftshift(data)))
 
-    outputFile = h5py.File("t_r_" + inputFileName, 'w')
+    outputFile = h5py.File("t_r_" + baseFileName, 'w')
     print("Writing real part...")
     outputFile['data'] = np.real(data)
     outputFile.close()
     del outputFile
-    outputFile = h5py.File("t_i_" + inputFileName, 'w')
+    outputFile = h5py.File("t_i_" + baseFileName, 'w')
     print("Writing imaginary part...")
     outputFile['data'] = np.imag(data)
     outputFile.close()
     del outputFile
-    outputFile = h5py.File("t_a_" + inputFileName, 'w')
+    outputFile = h5py.File("t_a_" + baseFileName, 'w')
     print("Writing absolute part...")
     outputFile['data'] = np.abs(data)
     outputFile.close()
     del outputFile
 
     if fileForKeys != None:
-        transplant_keys(fileForKeys, "t_r_" + inputFileName)
-        transplant_keys(fileForKeys, "t_i_" + inputFileName)
-        transplant_keys(fileForKeys, "t_a_" + inputFileName)
+        transplant_keys(fileForKeys, "t_r_" + baseFileName)
+        transplant_keys(fileForKeys, "t_i_" + baseFileName)
+        transplant_keys(fileForKeys, "t_a_" + baseFileName)
 
 
-def create_mask_from_nan(inputFileName, outputFileName):
+def create_mask_from_nan(baseFileName, outputFileName):
     """
     Takes all values from an input file and transforms all NANs to zero and all non-NANs to 1.
     The result is saved in a new file and should be used as a mask.
-    inputFileName ... string path to file which should be read
+    baseFileName ... string path to file which should be read
     outputFileName ... string file name to which the mask should be saved.
     """
-    inputFile = h5py.File(inputFileName, 'r')
+    inputFile = h5py.File(baseFileName, 'r')
     maskFile = h5py.File(outputFileName, 'w')
 
     mask = np.array(inputFile['data'])
@@ -111,7 +111,7 @@ def create_mask_from_nan(inputFileName, outputFileName):
     # cleaning up and create keys
     maskFile.close()
     del maskFile
-    transplant_keys(inputFileName, outputFileName)
+    transplant_keys(baseFileName, outputFileName)
 
 
 def transplant_keys(keysFromPath, keysToPath, verbose=True):
@@ -139,13 +139,13 @@ def transplant_keys(keysFromPath, keysToPath, verbose=True):
     keysTo.close()
 
 
-def increase_contrast(inputFileName, factor=100):
+def increase_contrast(baseFileName, factor=100):
     """
     Mulitplies an h5 yell-file with a factor to give a better contrast in the PDF viewer.
-    inputFileName ... string path to file which should be modified
+    baseFileName ... string path to file which should be modified
     factor ... float number with which all data is multiplied
     """
-    file = h5py.File(inputFileName)
+    file = h5py.File(baseFileName)
     file['data'][:,:,:] = file['data'][:,:,:] * factor
     file.close()
 
@@ -161,12 +161,13 @@ def get_wR(fobs,fcalc,weights):
     return math.sqrt(np.sum(np.abs((weights * (np.abs(fobs - fcalc)) ** 2))) / np.sum(np.abs(weights * fobs ** 2)))
 
 
-def create_PDF_mask(baseFile, outputFileName, size=40):
+def create_PDF_mask(baseFile, outputFileName, size=40, offset=[0,0,0]):
     """
     Creates a mask file in the shape of a hexagonal prism.
     baseFile ... string path to a h5 file to get the metadata for the prism
     outputFileName ... string name of the newly created file which contains the mask
     size ... int diameter of the mask in pixel
+    offset ... list[three int] or array[three int] list or array to offset the mask in any direction
     """
     # clean up former files
     if os.path.exists(outputFileName):
@@ -176,6 +177,8 @@ def create_PDF_mask(baseFile, outputFileName, size=40):
     # creating helper variables to work with the shape
     dataShape = np.array(h5py.File(baseFile)['data'].shape)
     center = dataShape // 2
+
+    center = center + np.array(offset)
 
     # forming a broad outline in the shape of a prism
     data = np.zeros(dataShape)
@@ -272,13 +275,14 @@ def splice_data_uvx(inputFiles, outputFileName, filePath="", bgFileName=None, bg
     outputFile['data'] = data
 
 
-def splice_data_hkx(inputFiles, outputFileName, filePath=""):
+def splice_data_hkx(inputFiles, outputFileName, filePath="", useHalfsC=True):
     """
     Uses three reciprocal space data sets and creats a combined view.
     Perferable used for hkx reconstructions but has limited support for 0kl as well.
     inputFiles ... array[string] array of THREE strings, each strings is a file path to one of the data sets which should be combined.
     outputFileName ... string name of the newly created file which combines the three input files.
     filePath ... str this path will be attached to the provided data sets
+    useHalfsC ... boolean splits vertical views, i.e. h0l and 0kl in halfs instead of thirds
     """
     print("WARNING: USES HARDCODED ARRAY SIZE!")
     # applying file paths
@@ -300,6 +304,8 @@ def splice_data_hkx(inputFiles, outputFileName, filePath=""):
     data[:,:105,:] = -200 # lower right
     data[:,:,:155] = -200 # filling up lower half
     data[:105,:,:] = -300 # left
+    if useHalfsC:
+        data[:,105:,:155] = -100
 
     # the upper left quadrant belongs partially to left and partially to upper right
     # in the following, it will be distributed
@@ -381,6 +387,159 @@ def subtract_meerkat_dataset(dataset, subtrahend, outputFileName=None):
     return result
 
 
+def extend_yell_file(baseFileName, splitLength=0, offset=0, outputFolder="./"):
+    # Preparing the lists which hold the values which are to be inserted into the yell file
+    RefinableVariables = []
+    MScatterers = []
+    Variants = []
+    Correlations = []
+    Modes = []
+    Other = [] # inserted after scale
+    Print = [] # added at the end of the file
+
+    # preparing to output file location and create a new folder if neccessary
+    writePath = outputFolder
+    pathExtension = ""
+    if splitLength > 0: # add an index to the folder if multiple files are created
+        pathExtension = str(offset // splitLength)
+        writePath += pathExtension
+    helping_tools.check_folder(writePath) # create the folder, happens regardless of file splitting
+
+    # starting to write the yell model file
+    inputFiles = []
+    dataPointer = None
+    with open(os.path.join(writePath,"model.txt"), 'w') as modelFile:
+        # scan for all input instructions and extract the file names
+        with open(baseFileName, 'r') as yellexFile:
+            for line in yellexFile.readlines():
+                if line.strip().startswith("input"):
+                    inputFiles.append(line.strip().split(' ')[1]) # gets the file name from the input instruction
+
+        # read yell definition blocks from files into lists for later usage
+        for file in inputFiles:
+            dataPointer = None
+            with open(file) as extensionFile:
+                for line in extensionFile.readlines():
+                    if "RefinableVariables" in line:
+                        dataPointer = RefinableVariables
+                    elif "Correlations" in line:
+                        dataPointer = Correlations
+                    elif "Modes" in line:
+                        dataPointer = Modes
+                    elif "Preamble" in line:
+                        dataPointer = Other
+                    elif "FileEnd" in line:
+                        dataPointer = Print
+                    elif "UnitCell" in line:
+                        dataPointer = Variants
+                    if is_useable_input(line):
+                        if not line.endswith("\n"):
+                            line = line + "\n"
+                        dataPointer.append(line)
+
+        # if multiple model batches are created, redistribute the refinable varaiables over all model files
+        if splitLength > 0:
+            allParameters = Other + RefinableVariables
+            allParameters = list(filter(lambda a: a != '\n', allParameters))
+            RefinableVariables = allParameters[offset:offset+splitLength]
+            Other = allParameters[:offset]
+            Other += allParameters[offset+splitLength:]
+
+        # print a summary of parameters
+        print("Creating file ", os.path.join(writePath,"model.txt"))
+        print("   Preamble items: ", len(Other))
+        print("   RefinableVariables: ", len(RefinableVariables))
+
+        # here happens the actual writing
+        with open(baseFileName) as yellexFile:
+            dataPointer = None
+            writeIntoModelFile = False
+            for line in yellexFile.readlines():
+                # looking for start and endpoints in of blocks
+                if dataPointer != None and writeIntoModelFile:
+                    for item in dataPointer:
+                        modelFile.write(item)
+                    dataPointer = None
+                if '[' in line:
+                    writeIntoModelFile = True
+                if ']' in line:
+                    writeIntoModelFile = False
+
+                # writing the items which should be inserted
+                if "RefinableVariables" in line:
+                    dataPointer = RefinableVariables
+                elif "Correlations" in line:
+                    dataPointer = Correlations
+                elif "Modes" in line:
+                    dataPointer = Modes
+                elif "Scale" in line: # needs special treatment as it is not enclosed in brackets
+                    modelFile.write("# Externally added preamble items\n")
+                    for item in Other:
+                        modelFile.write(item)
+                elif "UnitCell" in line:
+                    dataPointer = Variants
+
+                # skip the input command and write from the original file
+                if "input" not in line:
+                    modelFile.write(line)
+
+            modelFile.write("\n")
+            for item in Print:
+                modelFile.write(item)
+    print("Creation of a yell file was successful!")
+    # finished with writing the yell model file
+
+    # determin wether another run is neccessary to generate additional model files with a different set of refinable variables
+    offset += splitLength
+    if offset < len(Other) + len(RefinableVariables) and splitLength > 0:
+        extend_yell_file(baseFileName, splitLength, offset, outputFolder)
+
+
+def is_useable_input(line):
+    result = True
+    unusable = ["RefinableVariables", "Correlations", "Modes", "Preamble", "FileEnd", "MolecularScatterers", "UnitCell"]
+
+    for item in unusable:
+        if item in line:
+            result = False
+    return result
+
+def read_extension_file(filePath):
+    dataPointer = None
+    RefinableVariables = []
+    MScatterers = []
+    Variants = []
+    Correlations = []
+    Modes = []
+    Other = [] # inserted after scale
+    Print = [] # added at the end of the file
+    with open (filePath) as file:
+        for line in file.readlines():
+            if "RefinableVariables" in line:
+                dataPointer = RefinableVariables
+            elif "Correlations" in line:
+                dataPointer = Correlations
+            elif "Modes" in line:
+                dataPointer = Modes
+            elif "Preamble" in line:
+                dataPointer = Other
+            elif "FileEnd" in line:
+                dataPointer = Print
+            elif "UnitCell" in line:
+                dataPointer = Variants
+            if is_useable_input(line):
+                if not line.endswith("\n"):
+                    line = line + "\n"
+                dataPointer.append(line)
+    return RefinableVariables, Correlations, Modes, Other, Print, Variants
+
+
+@helping_tools.deprecated
+def update_variables(newVariablesFilePath, targetFilePath):
+    with open(newVariablesFilePath) as f:
+        newVariables = np.array(f.readlines())
+    for i in range(len(newVariables)):
+        newVariables[i] = newVariables[i]
 
 
 @helping_tools.deprecated
