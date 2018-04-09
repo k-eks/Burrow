@@ -12,6 +12,8 @@ import scipy
 import h5py
 import os
 import os.path
+import glob
+import shutil
 import scipy.ndimage
 import pixdata
 
@@ -55,7 +57,15 @@ def flip_data_set(baseFileName):
     inputFile = h5py.File(baseFileName, 'a')
     data = np.array(inputFile['data'])
     del inputFile['data']
-    inputFile['data'] = np.flip(data,2)
+    data = np.flip(data,0)
+    data = np.rot90(data,1,(0,1)) # meerkat uses the matlab coordiantes, needs to be corrected here
+    # correcting the shifts in the data that occured through flipping
+    data = np.roll(data,1,0)
+    data = np.roll(data,1,1)
+    # and correcting the overhang from the roll above
+    data[0,:,:] = np.rot90(data[0,:,:],2)
+    data[:,0,:] = np.rot90(data[:,0,:],2)
+    inputFile['data'] = data
     inputFile.close()
 
 
@@ -275,14 +285,14 @@ def splice_data_uvx(inputFiles, outputFileName, filePath="", bgFileName=None, bg
     outputFile['data'] = data
 
 
-def splice_data_hkx(inputFiles, outputFileName, filePath="", useHalfsC=True):
+def splice_data_hkx(inputFiles, outputFileName, filePath="", useHalfs=True):
     """
     Uses three reciprocal space data sets and creats a combined view.
     Perferable used for hkx reconstructions but has limited support for 0kl as well.
     inputFiles ... array[string] array of THREE strings, each strings is a file path to one of the data sets which should be combined.
     outputFileName ... string name of the newly created file which combines the three input files.
     filePath ... str this path will be attached to the provided data sets
-    useHalfsC ... boolean splits vertical views, i.e. h0l and 0kl in halfs instead of thirds
+    useHalfs ... boolean splits vertical views, i.e. h0l and 0kl in halfs instead of thirds
     """
     print("WARNING: USES HARDCODED ARRAY SIZE!")
     # applying file paths
@@ -304,7 +314,7 @@ def splice_data_hkx(inputFiles, outputFileName, filePath="", useHalfsC=True):
     data[:,:105,:] = -200 # lower right
     data[:,:,:155] = -200 # filling up lower half
     data[:105,:,:] = -300 # left
-    if useHalfsC:
+    if useHalfs:
         data[:,105:,:155] = -100
 
     # the upper left quadrant belongs partially to left and partially to upper right
@@ -465,13 +475,45 @@ def extend_yell_file(baseFileName, splitLength=0, offset=0, outputFolder="./"):
         print("   Preamble items: ", len(Other))
         print("   RefinableVariables: ", len(RefinableVariables))
 
+        # parsing correlations to get rid of multiple Ruvw vectors with the same length and direction
+        allCorrelations = []
+        currentCorrelation = None
+        correlationPointer = -1
+        for line in Correlations:
+            if "[" in line and not line.lstrip().startswith("#"): # looking for the start of a correlation block, should also conatin the vector
+                currentCorrelation = Correlation()
+                currentCorrelation.set_uvw(line)
+                currentCorrelation.lines = []
+            elif "Multiplicity" in line and not line.lstrip().startswith("#"):
+                currentCorrelation.set_multiplicity(line)
+                # multiplictiy comes after Ruvw, when both are found a new object
+                # with them is created and checked wether such a combination already
+                # exists
+                for i in range(len(allCorrelations)):
+                    if allCorrelations[i].are_same_block(currentCorrelation):
+                        correlationPointer = i
+                if correlationPointer == -1: # multiplictiy and vector is new, append them
+                    allCorrelations.append(currentCorrelation)
+                    correlationPointer = len(allCorrelations) - 1
+            elif "]" in line and not line.lstrip().startswith("#"): # end of a coordination block, release all pointers
+                correlationPointer = -1
+            elif correlationPointer != -1: # read mode, append current line to current block
+                allCorrelations[correlationPointer].lines.append(line)
+
+        # bringing the correlations into a writeable pattern
+        Correlations = []
+        for c in allCorrelations:
+            Correlations.append(c.create_block())
+            print(len(c.lines), c.m, c.uvw)
+
+
         # here happens the actual writing
         with open(baseFileName) as yellexFile:
             dataPointer = None
             writeIntoModelFile = False
             for line in yellexFile.readlines():
                 # looking for start and endpoints in of blocks
-                if dataPointer != None and writeIntoModelFile:
+                if dataPointer != None and writeIntoModelFile and not line.lstrip().startswith("#"):
                     for item in dataPointer:
                         modelFile.write(item)
                     dataPointer = None
@@ -527,6 +569,7 @@ def read_extension_file(filePath):
     """
     Reads out a yell extension file and stores the additional parameters in arrays.
     filePath ... str file path and name to the yell extensionfile
+    returns six string lists, each list is a block that is to be inserted into the yell model file
     """
     dataPointer = None
     RefinableVariables = []
@@ -555,6 +598,74 @@ def read_extension_file(filePath):
                     line = line + "\n"
                 dataPointer.append(line)
     return RefinableVariables, Correlations, Modes, Other, Print, Variants
+
+
+def collect_refined_parameters(resultFileName, pathToFolders="./*", inputFiles="lsf*"):
+    """
+    Scans multiple files for yell refinement results and writes the refined parameters into a file.
+    resultFileName ... str file name in which all refined parameters are to be collected
+    pathToFolders ... str path to a folder in where the function should search for result files
+    input files ... str or string list
+                    if str than it is understood as a search pattern for file names that contain refinement results
+                    if string list it is understood as a list of file names where each file contains a refinement result
+    """
+    with open(resultFileName, 'w') as result:
+        # parse inputFiles to a list
+        if type(inputFiles) == str:
+            fileList = glob.glob(os.path.join(pathToFolders,inputFiles))
+        else:
+            fileList = inputFiles
+
+        # read out the files and look for refinement values
+        for file in fileList:
+            isResult = False
+            with open(file) as currentFile:
+                for line in currentFile.readlines():
+                    # only lines that are in between brackets are refinement results
+                    # the strange order of ifs and absence of elses ashures that only the values in between the brackets are taken and the rest is ignored
+                    if "]" in line:
+                        isResult = False
+                    if isResult:
+                        result.write(line)
+                    if "[" in line:
+                        isResult = True
+
+
+def distribute_refined_parameters(parametersFileName, updateFileList, updateFilePath):
+    """
+    Makes a backup copy of the yell files and overwrites the old parameters with a given set of new parameters.
+    parametersFileName ...
+    """
+    # putting all refined parametera in a list
+    with open(parametersFileName) as parametersFile:
+        allParameters = parametersFile.readlines()
+
+    for file in updateFileList:
+        shutil.copyfile(os.path.join(updateFilePath,file),os.path.join(updateFilePath,"ins_" + file)) # make a backup
+        isParameterLine = False
+        with open(os.path.join(updateFilePath,"ins_" + file)) as insFile:
+            with open (os.path.join(updateFilePath,file), 'w') as resFile: # this creates a new file
+                for line in insFile.readlines():
+                    if ";" in line: # only parameter declerations have semicolons
+                        leadingSpaces = len(line) - len(line.lstrip())
+                        currentParameter = extract_parameter_name(line)
+                        # searching through the parameter list
+                        for p in allParameters:
+                            if currentParameter == extract_parameter_name(p):
+                                # create the update line for writing later
+                                line = " " * leadingSpaces + p.split('(')[0] + ";\n"
+                    resFile.write(line)
+
+
+def extract_parameter_name(line):
+    """
+    Parses a line that contains a parameter decleration and returns only the name of the parameter
+    line ... string a line that should be parsed
+    returns string the parameter name without anything else
+    """
+    line = line.lstrip() # remove potential spaces
+    return line.split('=')[0]
+
 
 
 @helping_tools.deprecated
@@ -691,3 +802,79 @@ def hextransform(im):
 def hextransform2(im):
     T = np.array([[1, 0], [math.cos(math.pi / 3), math.sin(math.pi / 3)]])
     return imtransform_centered(im, T)
+
+
+def downscale_dataset(inputFileName, outputFileName, prototype, scaleFactor, punchTreshold=-1000):
+    inputFile = h5py.File(inputFileName)
+    outputFile = h5py.File(outputFileName)
+    transplant_keys(prototype, outputFileName)
+    dataShape = inputFile['data'].shape/scaleFactor
+    scaledData = np.zeros(dataShape)
+
+    i = 0
+    while i < dataShape[0]:
+        j = 0
+        while j < dataShape[1]:
+            k = 0
+            while k < dataShape[2]:
+                pixelValue = 0
+                fragment = inputFile['data'][\
+                i * scaleFactor + scaleFactor // 2 : i * scaleFactor + scaleFactor, \
+                j * scaleFactor + scaleFactor // 2 : j * scaleFactor + scaleFactor, \
+                k * scaleFactor + scaleFactor // 2 : k * scaleFactor + scaleFactor, \
+                ]
+                recordedData = fragment[fragment > punchTreshold]
+                if len(recordedData) > scaleFactor ** 3 // 2:
+                    pixelValue = np.average(recordedData)
+                scaledData[i,j,k] = pixelValue
+    if 'data' in outputFile:
+        del outputFile['data']
+    outputFile['data'] = scaledData
+
+
+class Correlation:
+    """
+    This class contains a single correlation block as defined in yell.
+    Used for transforming a yellex file into a yell model file.
+    """
+    def __init__(self):
+        uvw = None
+        m = None
+        lines = []
+
+    def set_multiplicity(self, multiplicity):
+        """
+        Extracts the multiplicity from a string.
+        muliplicity ... string that is formatted like "Multiplicity 3"
+        """
+        self.m = str([int(s) for s in multiplicity.split() if s.isdigit()][0])
+
+
+    def set_uvw(self, Ruvw):
+        """
+        Extracts the Ruvw vector from a string.
+        Ruvw ... string formatted like "(0,0,0)"
+        """
+        self.uvw = Ruvw.split('(')[1].split(')')[0].split(',')
+
+
+    def are_same_block(self, other):
+        """
+        Checks wether two torrelations have the same vector and  multiplicity.
+        Do not overload the == operator! it will also effect the working of the != operator!
+        other ... Correlation correlation block to which to check against
+        returns ... bool True if both classes have the same vector and multiplicity and false otherwise
+        """
+        return self.uvw[0] == other.uvw[0] and self.uvw[1] == other.uvw[1] and self.uvw[2] == other.uvw[2] and self.m == other.m
+
+
+    def create_block(self):
+        """
+        Creates the stat block containg Ruvw, multiplicity and correlations.
+        returns ... string a string formatted to be used in a yell file
+        """
+        result = "[(" + self.uvw[0] + "," + self.uvw[1] + "," + self.uvw[2] + ")\n"
+        result = result + "Multiplicity " + self.m + "\n"
+        result = result + "".join(self.lines)
+        result = result + "\n]\n"
+        return result
