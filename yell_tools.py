@@ -16,6 +16,7 @@ import glob
 import shutil
 import scipy.ndimage
 import pixdata
+import random
 
 
 # two lists with yell's standard file names for reciprocal and real space data sets
@@ -397,7 +398,7 @@ def subtract_meerkat_dataset(dataset, subtrahend, outputFileName=None):
     return result
 
 
-def extend_yell_file(baseFileName, splitLength=0, offset=0, outputFolder="./"):
+def extend_yell_file(baseFileName, splitLength=0, offset=0, outputFolder="./", hardcodedSort=False, modifiedParameters=None, silentMode=False):
     """
     Splices additional yell statements into a base file and outputs a yell model.txt
     baseFileName ... str a standard yell file that is extended by the "input" command.
@@ -411,6 +412,8 @@ def extend_yell_file(baseFileName, splitLength=0, offset=0, outputFolder="./"):
     offset ... int number of how many RefinableVariables and preamble items should before
                    be put into the preamble before splitLength number of items are
                    put into the RefinableVariables section
+    hardcodedSort ... bool for practical reasons I had do modify the parameter list
+                   but this will be only done if this flag is set to true
     outputFolder ... str folder where to put the resulting model.txt
     """
     # Preparing the lists which hold the values which are to be inserted into the yell file
@@ -419,7 +422,10 @@ def extend_yell_file(baseFileName, splitLength=0, offset=0, outputFolder="./"):
     Variants = []
     Correlations = []
     Modes = []
-    Other = [] # inserted after scale
+    Other = [] # inserted after scale, if it contains variables, they will be refined when the model is split to multiple files
+    Other.append("# Externally added preamble items\n")
+    Static = [] # inserted after scale but is never modified
+    Static.append("# Static entries\n")
     Print = [] # added at the end of the file
 
     # preparing to output file location and create a new folder if neccessary
@@ -453,6 +459,8 @@ def extend_yell_file(baseFileName, splitLength=0, offset=0, outputFolder="./"):
                         dataPointer = Modes
                     elif "Preamble" in line:
                         dataPointer = Other
+                    elif "Static" in line:
+                        dataPointer = Static
                     elif "FileEnd" in line:
                         dataPointer = Print
                     elif "UnitCell" in line:
@@ -463,17 +471,48 @@ def extend_yell_file(baseFileName, splitLength=0, offset=0, outputFolder="./"):
                         dataPointer.append(line)
 
         # if multiple model batches are created, redistribute the refinable varaiables over all model files
-        if splitLength > 0:
+        if splitLength > 0 or hardcodedSort:
             allParameters = Other + RefinableVariables
-            allParameters = list(filter(lambda a: a != '\n', allParameters))
-            RefinableVariables = allParameters[offset:offset+splitLength]
-            Other = allParameters[:offset]
-            Other += allParameters[offset+splitLength:]
+
+            #############################################################
+            # HERE IS THE HARDCODED PORTION! WATCH OUT!                 #
+            #############################################################
+            if hardcodedSort:
+                if not silentMode:
+                    print("Warning hardcoded sorting is active!!!")
+                # use only a parameter word combination
+                # for i in allParameters:
+                #     if "center" in i:
+                #         p.append(i)
+                # sort parameters
+                # for i in sorted(sorted(p, key=lambda x: x.split('_')[4]), key=lambda x: x.split('_')[5]):
+                #     print(i)
+                # arrange parameters randomly
+                # random.shuffle(p)
+            #############################################################
+            # END OF HARDCODED PART                                     #
+            #############################################################
+            if modifiedParameters != None:
+                RefinableVariables = []
+                for i in modifiedParameters:
+                    RefinableVariables.append(i[0] + "=" + str(i[1]) + ";\n")
+                for i in allParameters:
+                    for j in modifiedParameters:
+                        if j[0] in i:
+                            allParameters.remove(i)
+                Other = allParameters
+
+            if splitLength > 0:
+                allParameters = list(filter(lambda a: a != '\n', allParameters))
+                RefinableVariables = allParameters[offset:offset+splitLength]
+                Other = allParameters[:offset]
+                Other += allParameters[offset+splitLength:]
 
         # print a summary of parameters
-        print("Creating file ", os.path.join(writePath,"model.txt"))
-        print("   Preamble items: ", len(Other))
-        print("   RefinableVariables: ", len(RefinableVariables))
+        if not silentMode:
+            print("Creating file ", os.path.join(writePath,"model.txt"))
+            print("   Preamble items: ", len(Other))
+            print("   RefinableVariables: ", len(RefinableVariables))
 
         # parsing correlations to get rid of multiple Ruvw vectors with the same length and direction
         allCorrelations = []
@@ -504,10 +543,11 @@ def extend_yell_file(baseFileName, splitLength=0, offset=0, outputFolder="./"):
         Correlations = []
         for c in allCorrelations:
             Correlations.append(c.create_block())
-            print(len(c.lines), c.m, c.uvw)
+            # print(len(c.lines), c.m, c.uvw)
 
 
         # here happens the actual writing
+        Other = Static + Other
         with open(baseFileName) as yellexFile:
             dataPointer = None
             writeIntoModelFile = False
@@ -530,7 +570,6 @@ def extend_yell_file(baseFileName, splitLength=0, offset=0, outputFolder="./"):
                 elif "Modes" in line:
                     dataPointer = Modes
                 elif "Scale" in line: # needs special treatment as it is not enclosed in brackets
-                    modelFile.write("# Externally added preamble items\n")
                     for item in Other:
                         modelFile.write(item)
                 elif "UnitCell" in line:
@@ -543,7 +582,8 @@ def extend_yell_file(baseFileName, splitLength=0, offset=0, outputFolder="./"):
             modelFile.write("\n")
             for item in Print:
                 modelFile.write(item)
-    print("Creation of a yell file was successful!")
+    if not silentMode:
+        print("Creation of a yell file was successful!")
     # finished with writing the yell model file
 
     # determin wether another run is neccessary to generate additional model files with a different set of refinable variables
@@ -558,7 +598,7 @@ def is_useable_input(line):
     line ... str the text line which should be tested
     """
     result = True
-    unusable = ["RefinableVariables", "Correlations", "Modes", "Preamble", "FileEnd", "MolecularScatterers", "UnitCell"]
+    unusable = ["RefinableVariables", "Correlations", "Modes", "Preamble", "Static", "FileEnd", "MolecularScatterers", "UnitCell"]
 
     for item in unusable:
         if item in line:
