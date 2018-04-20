@@ -15,7 +15,6 @@ import os.path
 import glob
 import shutil
 import scipy.ndimage
-import pixdata
 import random
 
 
@@ -398,6 +397,67 @@ def subtract_meerkat_dataset(dataset, subtrahend, outputFileName=None):
     return result
 
 
+def multiply_meerkat_dataset(dataset, multiplicator, outputFileName=None):
+    """
+    This function mulitplicates 3D data in different formats with each other.
+    A key feature of this function is its power to parse multiple data types into each other and back so that I don't have to worry what kind of data I feed it to.
+    dataset ... 3D data with which multiplicator will be multiplicated
+    multiplicator ... 3D data which will be subtracted from dataset
+    the input types are special, for dataset and multiplicator they can be either str, a h5 file, a h5 dataset or np.array and not neccessarily the same for both.
+    outputFileName ... str when given and dataset is also a path, the result will be written to this file
+    return np.array the result of the multiplication
+    """
+    print("WARNING: ONLY WORKS WITH THREE DIMENSIONAL DATA!!!")
+    resultType = type(dataset)
+    # the follwoing two variables will hold the values for subtraction
+    data = None
+    sub = None
+
+    # parsing input
+    # check if inputs are files paths
+    if type(dataset) == str:
+        data = np.array(h5py.File(dataset)['data'][:,:,:])
+    if type(multiplicator) == str:
+        sub = np.array(h5py.File(multiplicator)['data'][:,:,:])
+
+    # check if inputs are h5-files
+    if type(dataset) == h5py._hl.files.File:
+        data = np.array(dataset['data'][:,:,:])
+    if type(multiplicator) == h5py._hl.files.File:
+        sub = np.array(multiplicator['data'][:,:,:])
+
+    # check if inputs are h5-files
+    if type(dataset) == h5py._hl.dataset.Dataset:
+        data = np.array(dataset[:,:,:])
+    if type(multiplicator) == h5py._hl.dataset.Dataset:
+        sub = np.array(multiplicator[:,:,:])
+
+    # check if inputs are numpy arrays
+    if type(dataset) == np.ndarray:
+        data = dataset
+    if type(multiplicator) == np.ndarray:
+        sub = multiplicator
+
+    result = data * sub # doing the multiplication ########################
+
+    # parsing output, if necessary
+    # writing out if handling files
+    if resultType == str and outputFileName != None:
+        if os.path.exists(outputFileName):
+            os.remove(outputFileName)
+        outputFile = h5py.File(outputFileName)
+        transplant_keys(dataset, outputFileName)
+        outputFile['data'] = result
+    # simple type check if only knwon formats where handled
+    elif resultType == h5py._hl.files.File or resultType == h5py._hl.dataset.Dataset or resultType == np.ndarray:
+        pass
+    # throw erors with unkown data types
+    else:
+        raise TypeError("I do not know how to handle the input type: ", resultType)
+
+    return result
+
+
 def extend_yell_file(baseFileName, splitLength=0, offset=0, outputFolder="./", hardcodedSort=False, modifiedParameters=None, silentMode=False):
     """
     Splices additional yell statements into a base file and outputs a yell model.txt
@@ -415,6 +475,9 @@ def extend_yell_file(baseFileName, splitLength=0, offset=0, outputFolder="./", h
     hardcodedSort ... bool for practical reasons I had do modify the parameter list
                    but this will be only done if this flag is set to true
     outputFolder ... str folder where to put the resulting model.txt
+    hardcodedSort ... bool indicates wether the section dedicated to sorting parameters should be used.
+                      Warning: this section is hardcoded! Do not use this option unless you know what to do!
+    silentMode ... bool If true, no status messages will be displayed.
     """
     # Preparing the lists which hold the values which are to be inserted into the yell file
     RefinableVariables = []
@@ -485,17 +548,27 @@ def extend_yell_file(baseFileName, splitLength=0, offset=0, outputFolder="./", h
                 #     if "center" in i:
                 #         p.append(i)
                 # sort parameters
-                # for i in sorted(sorted(p, key=lambda x: x.split('_')[4]), key=lambda x: x.split('_')[5]):
-                #     print(i)
+                allParameters = list(map(str.lstrip, allParameters))
+                allParameters = [x for x in allParameters if not x.startswith('#')]
+                allParameters = list(filter(None, allParameters))
+                # for i in sorted(sorted(allParameters, key=lambda x: x.split('_')[4]), key=lambda x: x.split('_')[5]):
+                for i in sorted(allParameters, key=lambda x: x.split('_')[5]):
+                    print(i)
                 # arrange parameters randomly
                 # random.shuffle(p)
             #############################################################
             # END OF HARDCODED PART                                     #
             #############################################################
+
+            # The following section allows for individual parameters to be replaced
             if modifiedParameters != None:
+                if not silentMode:
+                    print("Warning: using an externally added RefinableVariables set!")
                 RefinableVariables = []
-                for i in modifiedParameters:
-                    RefinableVariables.append(i[0] + "=" + str(i[1]) + ";\n")
+                # parsing the new parameters and make them refinable
+                for parameter in modifiedParameters:
+                    RefinableVariables.append(parameter[0] + "=" + str(parameter[1]) + ";\n")
+                # remove potential duplicates and mak all other parameters non-refinable
                 for i in allParameters:
                     for j in modifiedParameters:
                         if j[0] in i:
@@ -726,79 +799,6 @@ def invert_c_axis(dataSetFileName):
         newData[:,:,-i] = oldData[:,:,i]
     dataSetFile['data'][:,:,:] = newData[:,:,:]
     dataSetFile.close()
-
-
-# based on some pre-existing code by Thomas Weber
-@helping_tools.deprecated
-def combineThreeFrames(upperleft, upperright, lowerhalf, factor = 1):
-    """
-    Combines three frams in one frame, which is returned.
-    The first frame covers the upper left, the second to upper right quadrant and the third the lower half
-    The frames are shifted to avoid overlapping zero lines
-    All frames are assumed to have the same shape
-    """
-    # make a type casting if neccessary
-    if type(upperleft) == str:
-        a = pixdata.pixdata()
-        a.readYellFile(upperleft)
-    else:
-        a = upperleft
-    if type(upperright) == str:
-        b = pixdata.pixdata()
-        b.readYellFile(upperright)
-    else:
-        b = upperright
-    if type(lowerhalf) == str:
-        c = pixdata.pixdata()
-        c.readYellFile(lowerhalf)
-    else:
-        c = lowerhalf
-
-    # adding the second to the upper right corner; note the offset to avoid overlapping line
-    if a.dimension == 3:
-        out = pixdata.pixdata(np.zeros((a.npixels[0] + 2, a.npixels[1] + 2, a.npixels[2])))
-        out.axismin = a.axismin
-        out.pixelsize = a.pixelsize
-        out.data[0:a.npixels[0] // 2 + 1, a.npixels[1] // 2 + 2:a.npixels[1] + 2, 0:a.npixels[2] ] = \
-                 a.data[0:a.npixels[0] // 2 + 1, a.npixels[1] // 2:a.npixels[1], 0:a.npixels[2] ]
-        out.data[b.npixels[0] // 2 + 2: b.npixels[0] + 2, b.npixels[1] // 2 + 2: b.npixels[1] + 2, 0:out.npixels[2]] = \
-                 b.data[b.npixels[0] // 2: c.npixels[0], b.npixels[1] // 2: c.npixels[1], 0:c.npixels[2]]
-        out.data[0:c.npixels[0] // 2 + 1, 0: c.npixels[1]//2 + 1, 0:c.npixels[2]] = \
-                 c.data[0:c.npixels[0] // 2 + 1, 0:c.npixels[1] // 2 + 1, 0:c.npixels[2]]
-        # ins the second half of the third multiplied by factor
-        out.data[c.npixels[0] // 2 + 2: c.npixels[0] + 2, 0: c.npixels[1]//2 + 1, 0:c.npixels[2]] = \
-                 c.data[c.npixels[0] // 2: c.npixels[0], 0:c.npixels[1] // 2 + 1, 0:c.npixels[2]] * factor
-    else:
-        out = pixdata.pixdata(np.zeros((a.npixels[0] + 2, a.npixels[1] + 2)))
-        out.axismin = a.axismin
-        out.pixelsize = a.pixelsize
-        out.data[0:a.npixels[0] // 2 + 1, a.npixels[1] // 2 + 2:a.npixels[1] + 2 ] = \
-                 a.data[0:a.npixels[0] / 2 + 1, a.npixels[1] // 2:a.npixels[1] ]
-        out.data[b.npixels[0] // 2 + 2: b.npixels[0] + 2, b.npixels[1] // 2 + 2: b.npixels[1] + 2] = \
-                 b.data[b.npixels[0] / 2: c.npixels[0], b.npixels[1] // 2: c.npixels[1]]
-        out.data[0:c.npixels[0] // 2 + 1, 0: c.npixels[1]//2 + 1] = \
-                 c.data[0:c.npixels[0] / 2 + 1, 0:c.npixels[1] // 2 + 1 ]
-        # ins the second half of the third multiplied by factor
-        out.data[c.npixels[0] // 2 + 2: c.npixels[0] + 2, 0: c.npixels[1]//2 + 1] = \
-                 c.data[c.npixels[0] // 2: c.npixels[0], 0:c.npixels[1] // 2 + 1] * factor
-    return out
-
-
-
-# def add_metadata(pathToYellModels, pathToReciprocalDataSet, pathToPdfDataSet):
-#     yellReciprocalModels = ["model.h5", "full.h5", "average.h5"]
-#     yellPdfModels = ["delta-pdf.h5"]
-
-#     # coping keys for reciprocal space data
-#     print("Copying keys for reciprocal space data...")
-#     for item in yellReciprocalModels:
-#         transplant_keys(pathToReciprocalDataSet, os.path.join(pathToYellModels, item), False)
-
-#     # coping keys for pdf space data
-#     print("Copying keys for pdf space data...")
-#     for item in yellPdfModels:
-#         transplant_keys(pathToPdfDataSet, os.path.join(pathToYellModels, item), False)
-
 
 
 
