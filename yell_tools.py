@@ -17,6 +17,7 @@ import re
 import shutil
 import scipy.ndimage
 import random
+import operator
 
 
 # two lists with yell's standard file names for reciprocal and real space data sets
@@ -339,13 +340,13 @@ def splice_data_hkx(inputFiles, outputFileName, filePath="", useHalfs=True):
     outputFile['data'] = data
 
 
-def subtract_meerkat_dataset(dataset, subtrahend, outputFileName=None):
+def arithmetic_meerkat_operation(dataset, operand_dataset, operation, outputFileName=None):
     """
     This function subtracts 3D data in different formats from each other.
     A key feature of this function is its power to parse multiple data types into each other and back so that I don't have to worry what kind of data I feed it to.
-    dataset ... 3D data from which subtrahend will be subtracted
-    subtrahend ... 3D data which will be subtracted from dataset
-    the input types are special, for dataset and subtrahend they can be either str, a h5 file, a h5 dataset or np.array and not neccessarily the same for both.
+    dataset ... 3D data which will be modified by operand_dataset.
+    operand_dataset ... 3D data which will modify the dataset
+                        the input types are special, for dataset and operand_dataset they can be either str, a h5 file, a h5 dataset or np.array and not neccessarily the same for both.
     outputFileName ... str when given and dataset is also a path, the result will be written to this file
     return np.array the result of the subtraction
     """
@@ -353,95 +354,34 @@ def subtract_meerkat_dataset(dataset, subtrahend, outputFileName=None):
     resultType = type(dataset)
     # the follwoing two variables will hold the values for subtraction
     data = None
-    sub = None
+    operand = None
 
     # parsing input
     # check if inputs are files paths
     if type(dataset) == str:
         data = np.array(h5py.File(dataset)['data'][:,:,:])
-    if type(subtrahend) == str:
-        sub = np.array(h5py.File(subtrahend)['data'][:,:,:])
+    if type(operand_dataset) == str:
+        operand = np.array(h5py.File(operand_dataset)['data'][:,:,:])
 
     # check if inputs are h5-files
     if type(dataset) == h5py._hl.files.File:
         data = np.array(dataset['data'][:,:,:])
-    if type(subtrahend) == h5py._hl.files.File:
-        sub = np.array(subtrahend['data'][:,:,:])
+    if type(operand_dataset) == h5py._hl.files.File:
+        operand = np.array(operand_dataset['data'][:,:,:])
 
     # check if inputs are h5-files
     if type(dataset) == h5py._hl.dataset.Dataset:
         data = np.array(dataset[:,:,:])
-    if type(subtrahend) == h5py._hl.dataset.Dataset:
-        sub = np.array(subtrahend[:,:,:])
+    if type(operand_dataset) == h5py._hl.dataset.Dataset:
+        operand = np.array(operand_dataset[:,:,:])
 
     # check if inputs are numpy arrays
     if type(dataset) == np.ndarray:
         data = dataset
-    if type(subtrahend) == np.ndarray:
-        sub = subtrahend
+    if type(operand_dataset) == np.ndarray:
+        operand = operand_dataset
 
-    result = data - sub # doing the subtraction ########################
-
-    # parsing output, if necessary
-    # writing out if handling files
-    if resultType == str and outputFileName != None:
-        if os.path.exists(outputFileName):
-            os.remove(outputFileName)
-        outputFile = h5py.File(outputFileName)
-        transplant_keys(dataset, outputFileName)
-        outputFile['data'] = result
-    # simple type check if only knwon formats where handled
-    elif resultType == h5py._hl.files.File or resultType == h5py._hl.dataset.Dataset or resultType == np.ndarray:
-        pass
-    # throw erors with unkown data types
-    else:
-        raise TypeError("I do not know how to handle the input type: ", resultType)
-
-    return result
-
-
-def multiply_meerkat_dataset(dataset, multiplicator, outputFileName=None):
-    """
-    This function mulitplicates 3D data in different formats with each other.
-    A key feature of this function is its power to parse multiple data types into each other and back so that I don't have to worry what kind of data I feed it to.
-    dataset ... 3D data with which multiplicator will be multiplicated
-    multiplicator ... 3D data which will be subtracted from dataset
-    the input types are special, for dataset and multiplicator they can be either str, a h5 file, a h5 dataset or np.array and not neccessarily the same for both.
-    outputFileName ... str when given and dataset is also a path, the result will be written to this file
-    return np.array the result of the multiplication
-    """
-    print("WARNING: ONLY WORKS WITH THREE DIMENSIONAL DATA!!!")
-    resultType = type(dataset)
-    # the follwoing two variables will hold the values for subtraction
-    data = None
-    sub = None
-
-    # parsing input
-    # check if inputs are files paths
-    if type(dataset) == str:
-        data = np.array(h5py.File(dataset)['data'][:,:,:])
-    if type(multiplicator) == str:
-        sub = np.array(h5py.File(multiplicator)['data'][:,:,:])
-
-    # check if inputs are h5-files
-    if type(dataset) == h5py._hl.files.File:
-        data = np.array(dataset['data'][:,:,:])
-    if type(multiplicator) == h5py._hl.files.File:
-        sub = np.array(multiplicator['data'][:,:,:])
-
-    # check if inputs are h5-files
-    if type(dataset) == h5py._hl.dataset.Dataset:
-        data = np.array(dataset[:,:,:])
-    if type(multiplicator) == h5py._hl.dataset.Dataset:
-        sub = np.array(multiplicator[:,:,:])
-
-    # check if inputs are numpy arrays
-    if type(dataset) == np.ndarray:
-        data = dataset
-    if type(multiplicator) == np.ndarray:
-        sub = multiplicator
-
-    result = data * sub # doing the multiplication ########################
+    result = operation(data, operand) # doing the arithmetic ########################
 
     # parsing output, if necessary
     # writing out if handling files
@@ -687,252 +627,6 @@ def extend_yell_file(baseFileName, splitLength=0, offset=0, outputFolder="./", h
         extend_yell_file(baseFileName, splitLength, offset, outputFolder, runNumber=runNumber+1)
 
 
-def extend_yell_file2(baseFileName, splitLength=0, offset=0, outputFolder="./", hardcodedSort=False, modifiedParameters=None, silentMode=False):
-    """
-    Splices additional yell statements into a base file and outputs a yell model.txt
-    baseFileName ... str a standard yell file that is extended by the "input" command.
-    splitLength ... int if larger than 0, multiple yell files are created in different
-                        folders where each model contains up to splitLength number of
-                        RefinableVariables (and the rest is put into the preamble).
-                        All preamble items and RefinableVariables are effected by this!
-                        Each model created that way contains different RefinableVariables
-                        so that all RefinableVariables are accounted for and refined.
-                        This is then a recursive method!
-    offset ... int number of how many RefinableVariables and preamble items should before
-                   be put into the preamble before splitLength number of items are
-                   put into the RefinableVariables section
-    hardcodedSort ... bool for practical reasons I had do modify the parameter list
-                   but this will be only done if this flag is set to true
-    outputFolder ... str folder where to put the resulting model.txt
-    hardcodedSort ... bool indicates wether the section dedicated to sorting parameters should be used.
-                      Warning: this section is hardcoded! Do not use this option unless you know what to do!
-    silentMode ... bool If true, no status messages will be displayed.
-    """
-    # Preparing the lists which hold the values which are to be inserted into the yell file
-    RefinableVariables = []
-    MScatterers = []
-    Variants = []
-    Correlations = []
-    Modes = []
-    Other = [] # inserted after scale, if it contains variables, they will be refined when the model is split to multiple files
-    Other.append("# Externally added preamble items\n")
-    Static = [] # inserted after scale but is never modified
-    Static.append("# Static entries\n")
-    Print = [] # added at the end of the file
-    RefinementBlockNames = []
-    refinemtBlockDefinition = ".*refblock.*"
-
-
-    # getting all input files and refinement blocks
-    inputFiles = []
-    with open(baseFileName, 'r') as yellexFile:
-        for line in yellexFile.readlines():
-            if line.strip().startswith("input"):
-                inputFiles.append(line.strip().split(' ')[1]) # gets the file name from the input instruction
-                lines = open(inputFiles[-1]).read()           # adding input string, raw_input("Enter Combination: ")
-                RefinementBlockNames.append(re.findall(refinemtBlockDefinition,lines))
-    RefinementBlockNames = [x for x in RefinementBlockNames if x != []]
-    print(RefinementBlockNames)
-
-    # read yell definition blocks from files into lists for later usage
-    for file in inputFiles:
-        dataPointer = None
-        with open(file) as extensionFile:
-            for line in extensionFile.readlines():
-                if "RefinableVariables" in line:
-                    dataPointer = RefinableVariables
-                elif "Correlations" in line:
-                    dataPointer = Correlations
-                elif "Modes" in line:
-                    dataPointer = Modes
-                elif "Preamble" in line:
-                    dataPointer = Other
-                elif "Static" in line:
-                    dataPointer = Static
-                elif "FileEnd" in line:
-                    dataPointer = Print
-                elif "UnitCell" in line:
-                    dataPointer = Variants
-                if is_useable_input(line):
-                    if not line.endswith("\n"):
-                        line = line + "\n"
-                    dataPointer.append(line)
-    sys.exit()
-
-    # preparing to output file location and create a new folder if neccessary
-    writePath = outputFolder
-    pathExtension = ""
-    if splitLength > 0: # add an index to the folder if multiple files are created
-        pathExtension = str(offset // splitLength)
-        writePath += pathExtension
-    helping_tools.check_folder(writePath) # create the folder, happens regardless of file splitting
-
-    # starting to write the yell model file
-    dataPointer = None
-    with open(os.path.join(writePath,"model.txt"), 'w') as modelFile:
-        # scan for all input instructions and extract the file names
-        with open(baseFileName, 'r') as yellexFile:
-            for line in yellexFile.readlines():
-                if line.strip().startswith("input"):
-                    inputFiles.append(line.strip().split(' ')[1]) # gets the file name from the input instruction
-
-        # read yell definition blocks from files into lists for later usage
-        for file in inputFiles:
-            dataPointer = None
-            with open(file) as extensionFile:
-                for line in extensionFile.readlines():
-                    if "RefinableVariables" in line:
-                        dataPointer = RefinableVariables
-                    elif "Correlations" in line:
-                        dataPointer = Correlations
-                    elif "Modes" in line:
-                        dataPointer = Modes
-                    elif "Preamble" in line:
-                        dataPointer = Other
-                    elif "Static" in line:
-                        dataPointer = Static
-                    elif "FileEnd" in line:
-                        dataPointer = Print
-                    elif "UnitCell" in line:
-                        dataPointer = Variants
-                    if is_useable_input(line):
-                        if not line.endswith("\n"):
-                            line = line + "\n"
-                        dataPointer.append(line)
-        sys.exit()
-
-        # if multiple model batches are created, redistribute the refinable varaiables over all model files
-        if splitLength > 0 or hardcodedSort or modifiedParameters != None:
-            allParameters = Other + RefinableVariables
-
-            #############################################################
-            # HERE IS THE HARDCODED PORTION! WATCH OUT!                 #
-            #############################################################
-            if hardcodedSort:
-                if not silentMode:
-                    print("Warning hardcoded sorting is active!!!")
-                # use only a parameter word combination
-                # for i in allParameters:
-                #     if "center" in i:
-                #         p.append(i)
-                # sort parameters
-                allParameters = list(map(str.lstrip, allParameters))
-                allParameters = [x for x in allParameters if not x.startswith('#')]
-                allParameters = list(filter(None, allParameters))
-                # for i in sorted(sorted(allParameters, key=lambda x: x.split('_')[4]), key=lambda x: x.split('_')[5]):
-                for i in sorted(allParameters, key=lambda x: x.split('_')[5]):
-                    print(i)
-                # arrange parameters randomly
-                # random.shuffle(p)
-            #############################################################
-            # END OF HARDCODED PART                                     #
-            #############################################################
-
-            # The following section allows for individual parameters to be replaced
-            if modifiedParameters != None:
-                if not silentMode:
-                    print("Warning: using an externally added RefinableVariables set!")
-                RefinableVariables = []
-                # parsing the new parameters and make them refinable
-                for parameter in modifiedParameters:
-                    RefinableVariables.append(parameter[0] + "=" + str(parameter[1]) + ";\n")
-                # remove potential duplicates and mak all other parameters non-refinable
-                for i in allParameters:
-                    for j in modifiedParameters:
-                        if j[0] in i:
-                            allParameters.remove(i)
-                Other = allParameters
-
-            if splitLength > 0:
-                allParameters = list(filter(lambda a: a != '\n', allParameters))
-                RefinableVariables = allParameters[offset:offset+splitLength]
-                Other = allParameters[:offset]
-                Other += allParameters[offset+splitLength:]
-
-        # print a summary of parameters
-        if not silentMode:
-            print("Creating file ", os.path.join(writePath,"model.txt"))
-            print("   Preamble items: ", len(Other))
-            print("   RefinableVariables: ", len(RefinableVariables))
-
-        # parsing correlations to get rid of multiple Ruvw vectors with the same length and direction
-        allCorrelations = []
-        currentCorrelation = None
-        correlationPointer = -1
-        for line in Correlations:
-            if "[" in line and not line.lstrip().startswith("#"): # looking for the start of a correlation block, should also conatin the vector
-                currentCorrelation = Correlation()
-                currentCorrelation.set_uvw(line)
-                currentCorrelation.lines = []
-            elif "Multiplicity" in line and not line.lstrip().startswith("#"):
-                currentCorrelation.set_multiplicity(line)
-                # multiplictiy comes after Ruvw, when both are found a new object
-                # with them is created and checked wether such a combination already
-                # exists
-                for i in range(len(allCorrelations)):
-                    if allCorrelations[i].are_same_block(currentCorrelation):
-                        correlationPointer = i
-                if correlationPointer == -1: # multiplictiy and vector is new, append them
-                    allCorrelations.append(currentCorrelation)
-                    correlationPointer = len(allCorrelations) - 1
-            elif "]" in line and not line.lstrip().startswith("#"): # end of a coordination block, release all pointers
-                correlationPointer = -1
-            elif correlationPointer != -1: # read mode, append current line to current block
-                allCorrelations[correlationPointer].lines.append(line)
-
-        # bringing the correlations into a writeable pattern
-        Correlations = []
-        for c in allCorrelations:
-            Correlations.append(c.create_block())
-            # print(len(c.lines), c.m, c.uvw)
-
-
-        # here happens the actual writing
-        Preamble = Static + Other # used a seperate variable because it would mess up the calculations for multiple files
-        with open(baseFileName) as yellexFile:
-            dataPointer = None
-            writeIntoModelFile = False
-            for line in yellexFile.readlines():
-                # looking for start and endpoints in of blocks
-                if dataPointer != None and writeIntoModelFile and not line.lstrip().startswith("#"):
-                    for item in dataPointer:
-                        modelFile.write(item)
-                    dataPointer = None
-                if '[' in line:
-                    writeIntoModelFile = True
-                if ']' in line:
-                    writeIntoModelFile = False
-
-                # writing the items which should be inserted
-                if "RefinableVariables" in line:
-                    dataPointer = RefinableVariables
-                elif "Correlations" in line:
-                    dataPointer = Correlations
-                elif "Modes" in line:
-                    dataPointer = Modes
-                elif "Scale" in line: # needs special treatment as it is not enclosed in brackets
-                    for item in Preamble:
-                        modelFile.write(item)
-                elif "UnitCell" in line:
-                    dataPointer = Variants
-
-                # skip the input command and write from the original file
-                if "input" not in line:
-                    modelFile.write(line)
-
-            modelFile.write("\n")
-            for item in Print:
-                modelFile.write(item)
-    if not silentMode:
-        print("Creation of a yell file was successful!")
-    # finished with writing the yell model file
-
-    # determin wether another run is neccessary to generate additional model files with a different set of refinable variables
-    offset += splitLength
-    if offset < len(Other) + len(RefinableVariables) and splitLength > 0:
-        extend_yell_file(baseFileName, splitLength, offset, outputFolder)
-
-
 def is_useable_input(line):
     """
     Tests if a text line is a starting block in the yell extension file.
@@ -1019,7 +713,9 @@ def collect_refined_parameters(resultFileName, pathToFolders="./*", inputFiles="
 def distribute_refined_parameters(parametersFileName, updateFileList, updateFilePath):
     """
     Makes a backup copy of the yell files and overwrites the old parameters with a given set of new parameters.
-    parametersFileName ...
+    parametersFileName ... string file name and path to the file which holds the refined parameters.
+    updateFileList ... list[string] collection of files which should be considered to update with the given paramter file.
+    updateFilePath ... string path to the folder where the files in updateFileList are stored.
     """
     # putting all refined parametera in a list
     with open(parametersFileName) as parametersFile:
